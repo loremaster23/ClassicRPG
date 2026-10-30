@@ -27,18 +27,18 @@ func _physics_process(delta: float) -> void:
 	elif velocity.y < 0.0:
 		velocity.y = 0.0
 
-	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = SALTO
 
 	var entrada := Vector2.ZERO
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
+	if Input.is_action_pressed("move_forward"):
 		entrada.y += 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
+	if Input.is_action_pressed("move_back"):
 		entrada.y -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		entrada.x += 1.0
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
+	if Input.is_action_pressed("move_left"):
 		entrada.x -= 1.0
+	if Input.is_action_pressed("move_right"):
+		entrada.x += 1.0
 
 	var yaw := 0.0
 	if camara:
@@ -50,7 +50,7 @@ func _physics_process(delta: float) -> void:
 		direccion = direccion.normalized()
 
 	var rapidez := VELOCIDAD
-	if Input.is_key_pressed(KEY_SHIFT):
+	if Input.is_action_pressed("sprint"):
 		rapidez = VELOCIDAD_CORRER
 
 	var deseada := direccion * rapidez
