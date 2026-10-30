@@ -17,6 +17,8 @@ var pitch := 0.38
 var distancia := 8.0
 var distancia_objetivo := 8.0
 
+var _orbiting := false
+
 func _ready() -> void:
 	camara = $Camera3D
 	camara.make_current()
@@ -24,11 +26,6 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if objetivo:
 		global_position = objetivo.global_position
-
-	if Input.is_key_pressed(KEY_Q):
-		yaw += VELOCIDAD_GIRO * delta
-	if Input.is_key_pressed(KEY_E):
-		yaw -= VELOCIDAD_GIRO * delta
 
 	distancia = lerpf(distancia, distancia_objetivo, clampf(10.0 * delta, 0.0, 1.0))
 	_colocar_camara()
@@ -53,11 +50,14 @@ func _colocar_camara() -> void:
 	camara.look_at(foco, Vector3.UP)
 
 func _unhandled_input(evento: InputEvent) -> void:
-	if evento is InputEventMouseButton:
-		if evento.button_index == MOUSE_BUTTON_WHEEL_UP:
-			distancia_objetivo = maxf(distancia_objetivo - 0.8, DISTANCIA_MIN)
-		elif evento.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			distancia_objetivo = minf(distancia_objetivo + 0.8, DISTANCIA_MAX)
-	elif evento is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		yaw -= evento.relative.x * SENSIBILIDAD
-		pitch = clampf(pitch + evento.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX)
+		if evento is InputEventMouseButton:
+			if Input.is_action_pressed("camera_zoom_in"):
+				distancia_objetivo = maxf(distancia_objetivo - 0.8, DISTANCIA_MIN)
+			elif Input.is_action_pressed("camera_zoom_out"):
+				distancia_objetivo = minf(distancia_objetivo + 0.8, DISTANCIA_MAX)
+			elif evento.button_index == MOUSE_BUTTON_RIGHT:
+				_orbiting = evento.pressed
+		elif evento is InputEventMouseMotion:
+			if _orbiting:
+				yaw -= evento.relative.x * SENSIBILIDAD
+				pitch = clampf(pitch + evento.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX)
