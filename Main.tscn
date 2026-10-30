@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://bujo664oumadp"]
+
+[ext_resource type="Script" uid="uid://6n816bdg6208" path="res://Main.gd" id="1_m7x2ka"]
+
+[node name="Main" type="Node3D" unique_id=417962187]
+script = ExtResource("1_m7x2ka")
+
+[node name="Node3D" type="Node3D" parent="." unique_id=180868328]
+transform = Transform3D(0.9455983, 0.2886956, -0.14999565, -0.26202807, 0.9490906, 0.17483814, 0.19283447, -0.12602358, 0.97310483, 0.69711304, -2.499237, 6.1035156e-05)
