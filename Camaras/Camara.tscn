@@ -4,3 +4,8 @@
 
 [node name="Camara" type="Node3D"]
 script = ExtResource("1_camara")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+fov = 65.0
+near = 0.1
+far = 500.0

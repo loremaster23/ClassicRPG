@@ -18,11 +18,7 @@ var distancia := 8.0
 var distancia_objetivo := 8.0
 
 func _ready() -> void:
-	camara = Camera3D.new()
-	camara.fov = 65.0
-	camara.near = 0.1
-	camara.far = 500.0
-	add_child(camara)
+	camara = $Camera3D
 	camara.make_current()
 
 func _process(delta: float) -> void:
