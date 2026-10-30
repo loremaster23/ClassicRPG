@@ -7,8 +7,8 @@ const RESOLUCION := 44
 const NUM_ARBOLES := 80
 const NUM_ROCAS := 24
 
-const ScriptJugador := preload("res://Jugador.gd")
-const ScriptCamara := preload("res://Camara.gd")
+const EscenaJugador := preload("res://Personajes/Jugador.tscn")
+const EscenaCamara := preload("res://Camaras/Camara.tscn")
 
 var ruido: FastNoiseLite
 var ruido_detalle: FastNoiseLite
@@ -89,11 +89,11 @@ func _crear_luz() -> void:
 func _crear_jugador() -> void:
 	var z := 10.0
 	var x := sin(z * 0.11) * 3.0
-	var jugador = ScriptJugador.new()
+	var jugador = EscenaJugador.instantiate()
 	jugador.position = Vector3(x, _altura(x, z) + 0.6, z)
 	add_child(jugador)
 
-	var camara = ScriptCamara.new()
+	var camara = EscenaCamara.instantiate()
 	camara.position = jugador.position
 	add_child(camara)
 	camara.objetivo = jugador
