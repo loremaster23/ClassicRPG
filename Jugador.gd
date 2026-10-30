@@ -30,6 +30,14 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = SALTO
 
+	# Determinar modo activo desde el estado de camara
+	# Misma indentación que var entrada
+	var camera_mode := "character"
+	if camara and camara._orbiting:
+		camera_mode = "linked"
+	elif camara and camara._freeorbiting:
+		camera_mode = "free"
+
 	var entrada := Vector2.ZERO
 	if Input.is_action_pressed("move_forward"):
 		entrada.y += 1.0
@@ -43,8 +51,19 @@ func _physics_process(delta: float) -> void:
 	var yaw := 0.0
 	if camara:
 		yaw = camara.yaw
-	var adelante := Vector3(-sin(yaw), 0.0, -cos(yaw))
-	var derecha := Vector3(cos(yaw), 0.0, -sin(yaw))
+
+	var personaje_yaw := modelo.rotation.y
+	var effective_yaw := personaje_yaw
+
+	# Elegir yaw efectivo segun modo activo
+	if camera_mode == "linked":
+		effective_yaw = yaw
+	# En modo free o character, el personaje conserva su orientacion
+	elif camera_mode == "free":
+		effective_yaw = personaje_yaw
+
+	var adelante := Vector3(-sin(effective_yaw), 0.0, -cos(effective_yaw))
+	var derecha := Vector3(cos(effective_yaw), 0.0, -sin(effective_yaw))
 	var direccion := adelante * entrada.y + derecha * entrada.x
 	if direccion.length() > 1.0:
 		direccion = direccion.normalized()
@@ -59,9 +78,10 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	if direccion.length() > 0.15:
-		var objetivo := atan2(-direccion.x, -direccion.z)
-		modelo.rotation.y = lerp_angle(modelo.rotation.y, objetivo, 12.0 * delta)
+	# Modo linked: orientar personaje hacia camara.yaw independientemente del movimiento
+	# Modo free/character: NO rotar automaticamente (se conserva orientacion actual)
+	if camera_mode == "linked" and camara:
+		modelo.rotation.y = lerp_angle(modelo.rotation.y, camara.yaw, 12.0 * delta)
 
 	_animar(delta)
 
