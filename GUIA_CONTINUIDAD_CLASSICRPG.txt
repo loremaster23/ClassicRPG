@@ -1,37 +1,63 @@
 ﻿GUIA DE CONTINUIDAD - CLASSICRPG
 Actualizada: 31/10/2026
+Fuente de referencia: repositorio GitHub, rama main.
 
-========================================
-1. OBJETIVO
-========================================
+============================================================
+1. IDENTIFICACION DEL PROYECTO
+============================================================
 
-Crear un MMORPG 3D inspirado en WoW Classic.
+Nombre: ClassicRPG
 
-- Solo humanos.
-- Estética similar a WoW Classic.
-- Combate mediante selección de objetivo.
+Objetivo:
+Desarrollar un MMORPG 3D inspirado en WoW Classic.
+
+Características previstas:
+- Personajes humanos.
+- Estética visual inspirada en WoW Classic.
+- Mundo 3D persistente.
+- Combate mediante selección de objetivos.
 - Arquitectura cliente-servidor.
-- Juego en PC y futuro acceso desde navegador móvil.
+- Multijugador.
+- Futuro acceso desde navegador y dispositivos móviles.
 
-2. ENTORNO
-========================================
-
-Proyecto:
+Proyecto local:
 C:\Users\Bruker\OneDrive\DESARROLLO_RPG\ClassicRPG
 
-GitHub:
+Repositorio:
 https://github.com/loremaster23/ClassicRPG.git
+
+Propietario:
+loremaster23
+
+Rama principal:
+main
 
 Motor:
 Godot 4.7.2.stable.official.ed1daf0bf
 
-Sistema:
+Sistema de trabajo:
 Windows y PowerShell.
 
-3. ESTRUCTURA
-========================================
+Último commit de publicación conocido:
+3481a80
+Completar rechazo de jugadores y mejoras de camara y animaciones.
+
+IMPORTANTE:
+El repositorio de GitHub es la referencia para comprobar el estado
+publicado. La copia local puede contener cambios todavía no publicados.
+
+============================================================
+2. ESTRUCTURA DEL PROYECTO
+============================================================
+
+Carpetas principales identificadas:
 
 ClassicRPG/
+  assets/
+    ui/
+  Camaras/
+  Mapa1/
+  Personajes/
   escenas/
     cliente/
     servidor/
@@ -44,448 +70,679 @@ ClassicRPG/
     enemigos/
     objetos/
     habilidades/
-  Camaras/
-  Mapa1/
-  Personajes/
 
-No sobrescribir los recursos anteriores sin necesidad:
-Mapa1/Escena1.tscn, Main.gd, Jugador.gd y Camara.gd.
+Archivos principales identificados:
 
-Commit inicial:
-cf6f77d Create client server project architecture
+- project.godot
+- Main.gd
+- Camara.gd
+- Jugador.gd
+- Mapa1/Escena1.tscn
+- Camaras/Camara.tscn
+- Personajes/Jugador.tscn
+- scripts/cliente/Multijugador.gd
+- scripts/servidor/Servidor.gd
+- escenas/servidor/Servidor.tscn
+- escenas/cliente/ClientePrueba.tscn
+- scripts/cliente/ClientePrueba.gd
+- assets/ui/servidor_lleno.png
 
-4. FASES Y PROGRESO
-========================================
+Escena principal configurada:
+res://Mapa1/Escena1.tscn
 
-FASE 1 - ARQUITECTURA
-ESTADO: COMPLETADA.
+No asumir que todos los directorios de datos contienen ya sistemas
+funcionales. La existencia de una carpeta no demuestra que su sistema
+esté implementado.
 
-- Separación cliente y servidor.
-- Organización de carpetas.
-- Proyecto conectado a GitHub.
+Antes de modificar un archivo, revisar su versión actual en el proyecto.
 
-FASE 2 - CONEXIÓN MULTIJUGADOR
-ESTADO: EN PRUEBAS.
+============================================================
+3. ARQUITECTURA ACTUAL
+============================================================
 
-- Comunicación WebSocket.
-- Puerto 9000.
-- Límite previsto de 2 jugadores.
-- Recepción de mensajes.
-- Falta verificar conexiones, desconexiones y reutilización de plazas.
+El proyecto utiliza una arquitectura cliente-servidor mediante WebSocket.
 
-FASE 3 - SINCRONIZACIÓN
-ESTADO: PENDIENTE.
+Servidor:
+scripts/servidor/Servidor.gd
 
-- Jugadores visibles entre sí.
-- Sincronización de posición y movimiento.
+Cliente multijugador principal:
+scripts/cliente/Multijugador.gd
 
-FASE 4 - PERSONAJES
-ESTADO: PENDIENTE.
+Dirección configurada en el cliente:
+ws://127.0.0.1:9000
 
-- Creación.
-- Selección.
-- Guardado.
+Puerto:
+9000
 
-FASE 5 - SISTEMAS DEL MUNDO
-ESTADO: PENDIENTE.
+Protocolo:
+WebSocket mediante WebSocketMultiplayerPeer.
 
-- Enemigos.
-- Combate.
-- Objetos.
-- Habilidades.
-- Entidades.
+Límite:
+2 jugadores simultáneos.
 
-FASE 6 - BASE DE DATOS
-ESTADO: PENDIENTE.
+El servidor mantiene un diccionario de jugadores y gestiona:
+- Conexiones.
+- Desconexiones.
+- Identificadores de jugadores.
+- Estado básico de cada jugador.
+- Distribución de movimientos.
+- Rechazo de conexiones cuando está lleno.
 
-- Persistencia de personajes.
-- Guardado de progreso.
-- Datos del mundo.
+El servidor utiliza los siguientes estados:
+- Posición X, Y y Z.
+- Orientación yaw.
+- Sprint.
+- Estado en el aire.
 
-FASE 7 - NAVEGADOR Y MÓVILES
-ESTADO: PENDIENTE.
+El servidor limita las coordenadas recibidas dentro de determinados
+rangos y distribuye los estados a los otros jugadores.
 
-- Acceso desde navegador.
-- Controles móviles.
-- Conexión remota al servidor.
+IMPORTANTE:
+La implementación actual funciona como servidor de recepción y
+distribución de estados. No debe describirse todavía como una arquitectura
+con simulación autoritativa completa del mundo, validación de combate,
+cuentas o persistencia.
 
-5. SERVIDOR ACTUAL
-========================================
+El servidor recibe estados de movimiento enviados por los clientes.
+La validación avanzada contra movimientos manipulados todavía está
+pendiente.
+
+============================================================
+4. SERVIDOR MULTIJUGADOR
+============================================================
 
 Archivo:
 scripts/servidor/Servidor.gd
 
-Código:
+Configuración actual:
+- PUERTO = 9000.
+- MAX_JUGADORES = 2.
+- TIEMPO_RECHAZO = 0.5 segundos.
 
-extends Node
+Funcionamiento:
+1. Inicializa el servidor WebSocket.
+2. Escucha las conexiones y desconexiones.
+3. Rechaza conexiones cuando ya hay dos jugadores.
+4. Envía el mensaje SERVIDOR_LLENO.
+5. Desconecta al cliente rechazado mediante el mecanismo programado.
+6. Registra el estado de los jugadores admitidos.
+7. Distribuye los estados de movimiento.
+8. Informa a los clientes cuando un jugador se desconecta.
 
-const PUERTO := 9000
-const MAX_JUGADORES := 2
+Mensajes principales:
+- welcome
+- player_joined
+- move
+- player_left
+- SERVIDOR_LLENO
 
-var servidor := WebSocketMultiplayerPeer.new()
-var jugadores := 0
+El servidor está preparado para ejecutarse como escena independiente:
 
-func _ready() -> void:
-    servidor.peer_connected.connect(_al_conectar)
-    servidor.peer_disconnected.connect(_al_desconectar)
-
-    var error := servidor.create_server(PUERTO, "*")
-
-    if error != OK:
-        push_error("No se pudo iniciar el servidor: %s" % error)
-        return
-
-    print("Servidor iniciado. Máximo de jugadores: ", MAX_JUGADORES)
-
-func _process(_delta: float) -> void:
-    servidor.poll()
-
-    while servidor.get_available_packet_count() > 0:
-        var id := servidor.get_packet_peer()
-        var mensaje := servidor.get_packet()
-        print("Jugador ", id, ": ", mensaje.get_string_from_utf8())
-
-func _al_conectar(id: int) -> void:
-    jugadores += 1
-    print("Jugador conectado: ", id, " | ", jugadores, "/", MAX_JUGADORES)
-
-    if jugadores >= MAX_JUGADORES:
-        servidor.refuse_new_connections = true
-        print("Servidor lleno. No acepta más conexiones.")
-
-func _al_desconectar(id: int) -> void:
-    jugadores -= 1
-    print("Jugador desconectado: ", id, " | ", jugadores, "/", MAX_JUGADORES)
-    servidor.refuse_new_connections = false
-
-func _exit_tree() -> void:
-    servidor.close()
-
-Escena:
 escenas/servidor/Servidor.tscn
 
-6. CLIENTE DE PRUEBA ACTUAL
-========================================
+La escena utiliza:
+scripts/servidor/Servidor.gd
 
-Archivo:
+IMPORTANTE:
+El servidor no implementa todavía:
+- Autenticación de usuarios.
+- Cuentas.
+- Persistencia.
+- Validación autoritativa completa del movimiento.
+- Combate.
+- Inventario.
+- Enemigos compartidos.
+- Protección avanzada contra clientes manipulados.
+
+============================================================
+5. CLIENTE MULTIJUGADOR
+============================================================
+
+Archivo principal:
+scripts/cliente/Multijugador.gd
+
+Dirección configurada:
+ws://127.0.0.1:9000
+
+Funciones existentes:
+- Crear conexión WebSocket.
+- Procesar paquetes recibidos.
+- Identificar al jugador local.
+- Crear personajes remotos.
+- Actualizar objetivos de posición.
+- Interpolar posición y orientación.
+- Sincronizar sprint y estado en el aire.
+- Eliminar personajes remotos al desconectarse.
+- Detectar el rechazo por servidor lleno.
+- Mostrar la imagen de servidor lleno.
+
+El cliente envía estados aproximadamente cada 0.1 segundos.
+
+Los personajes remotos se actualizan mediante interpolación.
+
+La escena principal instancia el personaje, la cámara y el nodo
+de multijugador.
+
+IMPORTANTE:
+La dirección 127.0.0.1 apunta al propio equipo.
+El acceso desde otros equipos o por Internet todavía requiere
+configuración de red y una dirección de servidor accesible.
+
+Cliente de prueba auxiliar:
+
 scripts/cliente/ClientePrueba.gd
-
-Código:
-
-extends Node
-
-const DIRECCION := "ws://127.0.0.1:9000"
-
-var cliente := WebSocketMultiplayerPeer.new()
-var mensaje_enviado := false
-var tiempo := 0.0
-
-func _ready() -> void:
-    var error := cliente.create_client(DIRECCION)
-
-    if error != OK:
-        push_error("Error al conectar: %s" % error)
-        get_tree().quit()
-        return
-
-    print("Conectando con el servidor...")
-
-func _process(delta: float) -> void:
-    cliente.poll()
-    tiempo += delta
-
-    var estado := cliente.get_connection_status()
-
-    if estado == MultiplayerPeer.CONNECTION_CONNECTED and not mensaje_enviado:
-        var error := cliente.put_packet("Hola desde el cliente".to_utf8_buffer())
-
-        if error == OK:
-            print("Conectado. Mensaje enviado correctamente.")
-            mensaje_enviado = true
-
-    if estado == MultiplayerPeer.CONNECTION_DISCONNECTED and tiempo > 10.0:
-        push_error("No se pudo mantener la conexión.")
-        get_tree().quit()
-
-    if mensaje_enviado and tiempo > 60.0:
-        print("Finalizando cliente de prueba.")
-        cliente.close()
-        get_tree().quit()
-
-func _exit_tree() -> void:
-    cliente.close()
 
 Escena:
 escenas/cliente/ClientePrueba.tscn
 
-El cliente envía un mensaje al servidor y finaliza después de 60 segundos.
-
-7. PRUEBAS ANTERIORES
-========================================
-
-Una ejecución anterior registró dos clientes conectados.
-
-Ambos enviaron:
-Hola desde el cliente
-
-Después ambos se desconectaron y el contador regresó a 0/2.
-
-El cliente mostró:
-Conectado. Mensaje enviado correctamente.
-Finalizando cliente de prueba.
-
-Estos registros pertenecen a una prueba anterior. No demuestran que la ejecución actual esté funcionando.
-
-8. ESTADO ACTUAL DE LA INVESTIGACIÓN
-========================================
-
-Proceso de servidor identificado:
-
-PID: 21732
-Proceso: Godot_v4.7.2-stable_win64
-Inicio: 31/10/2026 01:57:11
-Responding: True
-
-Se encontró asociado al puerto 9000:
-
-LocalAddress: ::
-LocalPort: 9000
-RemoteAddress: ::
-RemotePort: 0
-State: vacío
-OwningProcess: 21732
-
-La consulta filtrada por State Listen no encontró resultados.
-
-Por tanto, todavía no está confirmado que el servidor acepte conexiones.
-
-Los registros consultados parecen antiguos.
-
-Rutas de registros:
-
-$env:TEMP\ClassicRPG-servidor.log
-$env:TEMP\ClassicRPG-servidor-error.log
-$env:TEMP\ClassicRPG-cliente1.log
-$env:TEMP\ClassicRPG-cliente1-error.log
-
-9. ÚLTIMO PASO PENDIENTE
-========================================
-
-El último comando enviado fue:
-
-Test-NetConnection 127.0.0.1 -Port 9000 -InformationLevel Detailed
-
-El usuario todavía no ha compartido el resultado.
-
-PRIMERO:
-Esperar el resultado y comprobar TcpTestSucceeded.
-
-NO iniciar otro cliente todavía.
-
-Después:
-1. Confirmar que el servidor acepta conexiones.
-2. Iniciar un solo cliente.
-3. Verificar una única conexión.
-4. Verificar recepción del mensaje.
-5. Comprobar desconexión.
-6. Confirmar contador 0/2.
-7. Probar una nueva conexión.
-8. Probar dos clientes.
-9. Comprobar rechazo del tercero.
-10. Comprobar liberación de una plaza.
-
-No avanzar a la Fase 3 hasta terminar estas pruebas.
-
-10. INSTRUCCIONES PARA LA SIGUIENTE IA
-========================================
-
-- Hablar español.
-- Ser breve y directo.
-- Trabajar con un solo comando PowerShell por vez.
-- Esperar el resultado antes de continuar.
-- No iniciar clientes adicionales sin autorización.
-- No cerrar procesos ni modificar archivos sin explicar el motivo.
-- No inventar resultados.
-- Verificar rutas y sintaxis.
-- Continuar desde el último paso pendiente.
-- Actualizar esta guía cuando cambie el progreso.
-
-FIN DE LA GUIA
-
-==================================================
-ACTUALIZACION DE PROGRESO - 31/10/2026
-==================================================
-
-FASE 2: COMUNICACION CLIENTE-SERVIDOR
-ESTADO: COMPLETADA Y VERIFICADA
-
-Pruebas realizadas:
-- Dos clientes conectados simultaneamente.
-- Tercer cliente rechazado al alcanzar el limite.
-- Mensaje SERVIDOR_LLENO recibido correctamente.
-- Desconexion automatica de los dos clientes.
-- Contador actualizado correctamente de 2/2 a 0/2.
-- Nuevo cliente aceptado despues de liberar las plazas.
-
-Resultado: servidor WebSocket operativo, limite de dos jugadores y gestion de conexiones y desconexiones comprobada.
-
-FASE 3: SINCRONIZACION DE JUGADORES
-ESTADO: PENDIENTE
-
-Proximos objetivos:
-- Asignar identidad a cada jugador.
-- Sincronizar posiciones mediante el servidor.
-- Distribuir movimientos a los demas clientes.
-- Mostrar otros jugadores en el mundo 3D.
-- Probar movimiento simultaneo.
-
-No se han iniciado todavia los trabajos de la fase 3.
-
-
+Este cliente es una herramienta de prueba anterior.
+No confundirlo con el cliente multijugador utilizado por la escena
+principal del juego.
 
 ============================================================
-ACTUALIZACIÓN DE PROGRESO - 31/10/2026
-FASE 3: SINCRONIZACIÓN MULTIJUGADOR
+6. PERSONAJES, MOVIMIENTO Y ANIMACIONES
 ============================================================
 
-PROGRESO COMPLETADO:
+Archivo:
+Jugador.gd
 
-- Integrado scripts/cliente/Multijugador.gd en Main.gd.
-- El cliente inicia conexión WebSocket con ws://127.0.0.1:9000.
-- Servidor funcional en el puerto 9000.
-- Capacidad configurada: máximo 2 jugadores simultáneos.
-- Servidor iniciado correctamente mediante Godot en modo headless.
-- Primer cliente conectado e identificado correctamente por el servidor.
-- Segundo cliente conectado correctamente.
-- Ambos personajes aparecen en las dos instancias del juego.
-- Movimiento y acciones de los personajes se reflejan en el otro cliente.
-- Sincronización básica comprobada visualmente en ambos sentidos.
-- Inicialización del proyecto y comprobación de scripts realizadas sin errores visibles.
+Escena:
+Personajes/Jugador.tscn
 
-RESULTADO:
-La conexión cliente-servidor y la sincronización básica de dos jugadores
-están funcionando en el mapa principal de ClassicRPG.
+Tipo de nodo principal:
+CharacterBody3D
 
-ESTADO DE LA FASE 3:
-Conexión multijugador y sincronización básica: COMPLETADAS Y VERIFICADAS.
+Movimiento implementado:
+- Movimiento en cuatro direcciones.
+- Aceleración.
+- Gravedad.
+- Salto.
+- Sprint.
+- Orientación vinculada a determinados modos de cámara.
 
-SIGUIENTES OBJETIVOS:
-1. Revisar y mejorar sincronización de orientación y animaciones.
-2. Implementar enemigos compartidos.
-3. Implementar combate sincronizado y validación del servidor.
-4. Sincronizar habilidades, daño y efectos.
-5. Implementar botín y persistencia de personajes.
+Velocidades configuradas:
+- Movimiento normal: 6.0.
+- Sprint: 10.0.
+- Salto: 8.0.
 
-NOTA:
-Esta actualización se añade al final de la guía. El contenido anterior
-se conserva sin reescritura ni modificaciones.
-============================================================
+La escena Personajes/Jugador.tscn utiliza MeshInstance3D y mallas primitivas. No contiene Skeleton3D, AnimationPlayer ni AnimationTree. Las animaciones actuales se calculan proceduralmente mediante Jugador.gd.
 
-============================================================
-ESTADO OFICIAL - 31/10/2026 - PUBLICACION FASE 3
-============================================================
+Animación procedural existente:
+- Balanceo de piernas.
+- Balanceo de brazos.
+- Variación del ritmo al correr.
+- Postura durante el salto y la caída.
+- Movimiento leve del personaje en reposo.
+- Movimiento básico de la capa.
 
-FASE 1: ARQUITECTURA - COMPLETADA.
-FASE 2: CONEXION CLIENTE-SERVIDOR - COMPLETADA Y VERIFICADA.
-FASE 3: SINCRONIZACION BASICA - COMPLETADA Y VERIFICADA.
+Los personajes remotos utilizan la misma función de animación
+con los estados recibidos por el cliente.
 
-PRUEBA REAL:
-- Servidor Godot PID 8660.
-- Cliente 1 PID 10764.
-- Cliente 2 PID 9340.
-- Puerto WebSocket 9000.
-- Dos conexiones TCP establecidas.
-- Ambos personajes visibles en ambas instancias.
-- Movimientos y acciones sincronizados en ambos sentidos.
-- Godot 4.7.2 completa el escaneo del proyecto sin errores visibles.
+ESTADO:
+Existe una base funcional de personaje y animación.
+No es todavía un sistema completo de animación RPG.
 
-ARCHIVOS PRINCIPALES:
-- Jugador.gd
-- Main.gd
-- scripts/cliente/ClientePrueba.gd
-- scripts/cliente/Multijugador.gd
-- scripts/servidor/Servidor.gd
+Todavía falta desarrollar o revisar:
+- Animaciones definitivas.
+- Modelos y esqueletos profesionales.
+- Equipamiento visual.
+- Armas.
+- Animaciones de ataque.
+- Animaciones de daño.
+- Muerte y resurrección.
+- Estados de combate.
+- Creación y selección de personajes.
+- Guardado de personajes.
 
-LIMITACION ACTUAL:
-La direccion del cliente utiliza ws://127.0.0.1:9000.
-El acceso desde otros equipos y por Internet queda pendiente.
-
-PROXIMA FASE:
-- Desconexion y eliminacion de personajes remotos.
-- Sincronizacion mejorada de animaciones.
-- Enemigos compartidos.
-- Combate y validacion de daño en servidor.
-- Persistencia de personajes.
-
-Los respaldos locales no forman parte de la publicacion.
+No rehacer el movimiento y la sincronización existentes sin una
+necesidad técnica demostrada.
 
 ============================================================
-
-
-============================================================
-ACTUALIZACION DE PROGRESO - 31/10/2026
-RECHAZO DE JUGADORES Y PANTALLA DE SERVIDOR LLENO
+7. CAMARA Y CONTROLES
 ============================================================
 
-PROGRESO COMPLETADO:
+Archivo:
+Camara.gd
 
-SERVIDOR:
-- MAX_JUGADORES permanece configurado en 2.
-- Puerto WebSocket: 9000.
-- Se corrigió el uso de get_peers(), que no existe en WebSocketMultiplayerPeer.
-- El rechazo utiliza disconnect_peer() y la consulta get_peer(id).
-- Se mantiene el mensaje SERVIDOR_LLENO.
-- Se mantiene el temporizador de rechazo de 0.5 segundos.
+Escena:
+Camaras/Camara.tscn
 
-CLIENTE:
-- Archivo: scripts/cliente/Multijugador.gd.
-- Detecta el mensaje SERVIDOR_LLENO.
-- Detiene el procesamiento multijugador del cliente rechazado.
-- Elimina el personaje local mediante queue_free().
-- Elimina los personajes remotos y limpia sus referencias.
-- Evita que el personaje rechazado permanezca flotando en el escenario.
+Cámara en tercera persona:
+- Seguimiento del personaje.
+- Rotación orbital.
+- Control de inclinación.
+- Zoom.
+- Colisión mediante consulta física para evitar atravesar el terreno.
 
-PANTALLA DE RECHAZO:
-- Imagen: assets/ui/servidor_lleno.png.
-- Imagen importada correctamente por Godot.
-- Se muestra a pantalla completa.
-- Se utiliza CanvasLayer con prioridad visual elevada.
-- El tercer jugador ve únicamente el paisaje, sin personajes.
+Controles principales configurados:
 
-PRUEBAS Y VERIFICACIONES:
-- Dos clientes conectados y visibles entre sí.
-- Movimiento de ambos clientes comprobado anteriormente.
-- Tercer cliente recibe SERVIDOR_LLENO.
-- Tercer cliente muestra la pantalla de paisaje sin personaje.
-- Escaneo del proyecto e importación de imagen completados sin errores visibles.
+- W / A / S / D: movimiento.
+- Espacio: salto.
+- Shift: correr.
+- Ratón: control de cámara según el modo activo.
+- Rueda: zoom.
+- Z: acción weapon_toggle configurada.
+- E: acción interact configurada.
+- Teclas de selección de objetivo y habilidades: acciones configuradas.
 
-RESULTADO:
-El límite de dos jugadores se mantiene.
-El tercer cliente recibe una pantalla visual de servidor lleno
-en lugar de quedarse con un personaje flotando.
+IMPORTANTE:
+Que una acción aparezca configurada en project.godot no significa
+que exista ya su sistema de juego completo.
 
-ARCHIVOS MODIFICADOS EN ESTE AVANCE:
-- scripts/servidor/Servidor.gd
-- scripts/cliente/Multijugador.gd
-- assets/ui/servidor_lleno.png
-
-RESPALDO LOCAL:
-ClassicRPG_RESPALDO_20261031
-
-Ubicación:
-C:\Users\Bruker\OneDrive\DESARROLLO_RPG\ClassicRPG_RESPALDO_20261031
-
-El respaldo contiene 70 archivos y excluye la caché regenerable .godot.
-El proyecto original no fue modificado por la operación de respaldo.
-
-PUNTO DE CONTINUIDAD:
-La siguiente IA debe comenzar leyendo esta guía y revisando
-los archivos actuales antes de modificar cualquier código.
-
-No asumir que pruebas no realizadas están completadas.
-Mantener el límite de dos jugadores y no romper la sincronización
-multijugador ya comprobada.
+No afirmar que la interacción, las habilidades o la selección de
+objetivos están terminadas sin revisar sus implementaciones.
 
 ============================================================
-FIN DE ACTUALIZACION
+8. MAPA Y MUNDO ACTUAL
+============================================================
+
+Archivo:
+Main.gd
+
+Escena:
+Mapa1/Escena1.tscn
+
+El mapa actual es un prototipo 3D generado mediante código.
+
+Elementos identificados:
+- Terreno con relieve procedural.
+- Camino de tierra.
+- Bosque.
+- Árboles.
+- Rocas.
+- Montañas en el borde del mapa.
+- Cielo procedural.
+- Iluminación direccional.
+- Niebla.
+- Colisión del terreno.
+- Personaje y cámara.
+- HUD de controles.
+
+Configuración del prototipo:
+- Tamaño del mundo: 110 unidades.
+- Resolución del terreno: 44.
+- Cantidad prevista de árboles: 80.
+- Cantidad prevista de rocas: 24.
+
+ESTADO:
+Existe un mapa prototipo funcional en cuanto a su construcción
+mediante código.
+
+Todavía no es un mundo MMORPG completo.
+
+Pendiente:
+- Escenarios definitivos.
+- Zonas y regiones.
+- Ciudades.
+- Edificios.
+- Caminos y puntos de interés definitivos.
+- Portales y transiciones.
+- Enemigos.
+- NPC.
+- Objetos del mundo.
+- Distribución de recursos.
+- Mundo compartido y persistente.
+
+============================================================
+9. RECHAZO DE JUGADORES Y SERVIDOR LLENO
+============================================================
+
+ESTADO: IMPLEMENTADO.
+
+Imagen:
+assets/ui/servidor_lleno.png
+
+Servidor:
+- Máximo de dos jugadores.
+- Detecta cuando se supera el límite.
+- Envía SERVIDOR_LLENO.
+- Programa la desconexión del cliente rechazado.
+
+Cliente:
+- Detecta SERVIDOR_LLENO.
+- Evita continuar procesando mensajes multijugador.
+- Elimina el personaje local rechazado.
+- Limpia los personajes remotos y sus referencias.
+- Muestra una pantalla visual de rechazo.
+
+La pantalla utiliza:
+- CanvasLayer.
+- TextureRect.
+- Imagen de servidor lleno a pantalla completa.
+
+Este comportamiento fue incorporado y publicado en el repositorio.
+
+No volver a implementar este sistema desde cero sin una razón técnica.
+
+============================================================
+10. ESTADO OFICIAL DE LAS FASES
+============================================================
+
+FASE 1 - ARQUITECTURA Y ORGANIZACION
+ESTADO: COMPLETADA.
+
+- Proyecto Godot.
+- Separación de carpetas.
+- Estructura cliente-servidor.
+- Repositorio GitHub.
+
+FASE 2 - CONEXION MULTIJUGADOR
+ESTADO: COMPLETADA Y VERIFICADA SEGUN LAS PRUEBAS REGISTRADAS.
+
+- WebSocket.
+- Puerto 9000.
+- Máximo de dos jugadores.
+- Conexiones y desconexiones.
+- Gestión de plazas.
+- Rechazo de jugadores adicionales.
+- Liberación de plazas.
+
+FASE 3 - SINCRONIZACION BASICA
+ESTADO: COMPLETADA Y VERIFICADA SEGUN LAS PRUEBAS REGISTRADAS.
+
+- Identificación de jugadores.
+- Personajes remotos.
+- Sincronización básica de posiciones.
+- Orientación.
+- Sprint.
+- Estado en el aire.
+- Movimiento visible en ambos clientes.
+- Interpolación de personajes remotos.
+
+FASE 4 - PERSONAJES, ANIMACIONES Y ESTADOS
+ESTADO: BASE IMPLEMENTADA; DESARROLLO EN CURSO.
+
+Ya existe:
+- Personaje controlable.
+- Movimiento y salto.
+- Sprint.
+- Animación procedural básica.
+- Sincronización básica de animación remota.
+- Cámara en tercera persona.
+
+Pendiente:
+- Revisar la escena completa del personaje.
+- Mejorar animaciones.
+- Incorporar modelos y recursos definitivos.
+- Equipamiento.
+- Estados de personaje.
+- Creación y selección.
+- Guardado de personajes.
+
+FASE 5 - MUNDO Y ENTIDADES
+ESTADO: PROTOTIPO DE MAPA EXISTENTE; SISTEMAS PENDIENTES.
+
+Pendiente:
+- Construcción del mundo definitivo.
+- Zonas.
+- NPC.
+- Enemigos.
+- Entidades compartidas.
+- IA de enemigos.
+- Aparición y desaparición de entidades.
+
+FASE 6 - COMBATE
+ESTADO: PENDIENTE.
+
+Pendiente:
+- Selección de objetivos funcional.
+- Ataques.
+- Daño.
+- Vida.
+- Muerte.
+- Habilidades.
+- Tiempos de reutilización.
+- Validación de acciones en el servidor.
+- Sincronización de combate.
+
+FASE 7 - INVENTARIO Y PROGRESION RPG
+ESTADO: PENDIENTE.
+
+Pendiente:
+- Inventario.
+- Objetos.
+- Equipamiento.
+- Atributos.
+- Experiencia.
+- Niveles.
+- Botín.
+- Misiones.
+- Progresión de personajes.
+
+FASE 8 - CUENTAS Y PERSISTENCIA
+ESTADO: PENDIENTE.
+
+Pendiente:
+- Registro e inicio de sesión.
+- Identidad persistente.
+- Guardado de personajes.
+- Guardado de inventario.
+- Guardado de progreso.
+- Persistencia del mundo.
+- Base de datos.
+
+FASE 9 - RED, ACCESO EXTERNO Y LANZAMIENTO
+ESTADO: PENDIENTE.
+
+Pendiente:
+- Servidor accesible desde otros equipos.
+- Configuración de red.
+- Seguridad.
+- Pruebas de carga.
+- Exportaciones.
+- Distribución.
+- Evaluación de compatibilidad con navegador.
+- Controles móviles.
+
+============================================================
+11. LIMITACIONES TECNICAS CONOCIDAS
+============================================================
+
+1. El cliente utiliza actualmente 127.0.0.1.
+   Esto limita la dirección configurada al propio equipo.
+
+2. El servidor retransmite estados recibidos.
+   Falta implementar validación autoritativa avanzada.
+
+3. No hay sistema completo de cuentas ni persistencia.
+
+4. No hay combate sincronizado completo.
+
+5. No hay inventario ni progresión RPG funcionales.
+
+6. El mapa es un prototipo procedural.
+
+7. Las animaciones son básicas y procedurales.
+
+8. Las acciones configuradas en project.godot no deben confundirse
+   con sistemas funcionales ya implementados.
+
+9. La existencia de una escena auxiliar de prueba no significa que
+   sea el cliente principal del juego.
+
+============================================================
+12. INVENTARIO DE PROGRAMAS DEL EQUIPO
+============================================================
+
+Inventario compartido el 31/10/2026.
+
+DESARROLLO:
+- Godot Engine 4.7.2.
+- Visual Studio Code 1.144.0.
+- Visual Studio Community 2022 17.13.3.
+- Git 2.41.0.3.
+- GitHub Desktop 3.6.10.
+- 7-Zip 26.02.
+
+MODELADO Y ARTE:
+- Blender 5.2.3.
+- Krita 5.3.4.1.
+
+INTELIGENCIA ARTIFICIAL:
+- ChatGPT.
+- GitHub Copilot 1.1.33.
+- GitHub Copilot CLI 1.0.105.
+- OpenCode 2.2.4.
+- Ollama 0.40.13.
+- Comfy Desktop 1.1.8.
+
+PRUEBAS Y DIAGNOSTICO:
+- OBS Studio 32.2.2.
+- Wireshark 4.6.9.
+- VLC.
+
+HERRAMIENTAS AUXILIARES:
+- Python 3.10.6.
+- Node.js 26.13.0.
+- AutoHotkey.
+- WSL.
+
+NOTAS:
+- Python está instalado, pero no apareció en PATH durante el inventario.
+- Blender está instalado, pero no apareció en PATH durante el inventario.
+- Antes de utilizarlos desde consola, localizar sus ejecutables.
+- Verificar qué modelos están descargados en Ollama.
+- Verificar qué modelos y flujos están disponibles en Comfy Desktop.
+
+Cursor no forma parte de las herramientas recomendadas para este proyecto.
+
+============================================================
+13. PLAN DE USO DE HERRAMIENTAS POR FASE
+============================================================
+
+FASES 1 A 3:
+- Godot: motor y ejecución del juego.
+- Git: control de versiones.
+- GitHub Desktop: revisión visual de cambios.
+- Wireshark: diagnóstico de red cuando sea necesario.
+- OBS: registro de pruebas.
+
+FASE 4:
+- Godot: escenas, personajes y animaciones.
+- Blender: modelos, rigging y animaciones 3D.
+- Krita: texturas, iconos y recursos gráficos.
+- ChatGPT y asistentes de programación: análisis y revisión.
+
+FASE 5:
+- Blender: escenarios, edificios y objetos.
+- Krita: texturas y recursos 2D.
+- Comfy Desktop: referencias visuales y conceptos.
+- Godot: integración del mundo.
+
+FASE 6:
+- Godot: lógica de combate.
+- VS Code: edición.
+- Asistentes de programación: apoyo técnico.
+- Wireshark: diagnóstico multijugador.
+
+FASE 7:
+- Godot: inventario y sistemas RPG.
+- Krita: iconos y elementos de interfaz.
+- Blender: equipamiento y objetos 3D.
+
+FASE 8:
+- Godot: integración.
+- Python o Node.js: solo si una necesidad concreta lo justifica.
+- Git: control de cambios.
+
+FASE 9:
+- Godot: exportación.
+- OBS: demostraciones.
+- Wireshark: pruebas de conectividad.
+- Git y GitHub Desktop: publicación.
+
+CRITERIOS:
+- Priorizar programas ya instalados.
+- No instalar herramientas sin una necesidad concreta.
+- Evitar duplicar tareas entre varias IA.
+- Comprobar licencias y condiciones de uso de recursos generados.
+- No depender de modelos locales que no estén instalados y comprobados.
+
+============================================================
+14. PROXIMOS PASOS RECOMENDADOS
+============================================================
+
+PRIMER PASO:
+Revisar la escena Personajes/Jugador.tscn y sus nodos.
+
+Motivo:
+Los scripts principales ya muestran una base de movimiento y animación.
+Antes de ampliar la Fase 4 es necesario conocer la estructura real
+del modelo y sus recursos.
+
+SEGUNDO PASO:
+Documentar el sistema de personaje existente y determinar qué mejoras
+son necesarias sin rehacer lo que ya funciona.
+
+TERCER PASO:
+Completar y mejorar las animaciones y estados del personaje.
+
+CUARTO PASO:
+Definir la arquitectura de entidades compartidas y enemigos.
+
+QUINTO PASO:
+Diseñar el combate con validación del servidor.
+
+SEXTO PASO:
+Desarrollar inventario, objetos, habilidades y progresión.
+
+SEPTIMO PASO:
+Diseñar cuentas y persistencia.
+
+OCTAVO PASO:
+Preparar acceso externo, seguridad y lanzamiento.
+
+No repetir pruebas completas de conexión y sincronización ya verificadas,
+salvo que un cambio concreto requiera comprobarlas.
+
+============================================================
+15. REGLAS DE TRABAJO PARA LA SIGUIENTE IA
+============================================================
+
+- Hablar en español.
+- Dar instrucciones claras y paso a paso.
+- Utilizar comandos compatibles con Windows PowerShell.
+- Trabajar preferentemente con un comando por vez.
+- Esperar el resultado del usuario antes de continuar.
+- Los comandos PowerShell deben mostrar el resultado y copiarlo
+  automáticamente al portapapeles mediante Set-Clipboard.
+- Antes de editar un archivo, explicar qué se va a modificar.
+- Cuando se edite un archivo de texto, proporcionar el contenido
+  completo que debe reemplazarlo.
+- No modificar código funcional sin autorización expresa.
+- No iniciar ni cerrar procesos sin explicar el motivo y obtener permiso.
+- No hacer commit ni push sin autorización expresa para esa publicación.
+- No publicar respaldos RESPALDO* indiscriminadamente.
+- No repetir pruebas completas ya realizadas.
+- No inventar resultados ni declarar terminadas funciones pendientes.
+- Revisar primero los archivos reales del repositorio.
+- Comprobar la diferencia entre la copia local y GitHub.
+- Mantener la documentación sincronizada con el código publicado.
+- Priorizar la estabilidad de las funciones multijugador existentes.
+- Recomendar herramientas nuevas solo cuando aporten una ventaja concreta.
+
+============================================================
+16. PUNTO EXACTO DE CONTINUIDAD
+============================================================
+
+Estado publicado de referencia:
+Rama main del repositorio ClassicRPG.
+
+Las fases 1, 2 y 3 están documentadas como completadas.
+
+La Fase 4 tiene una base funcional de personaje, movimiento,
+cámara y animaciones procedurales, pero todavía requiere desarrollo.
+
+La siguiente tarea recomendada es inspeccionar:
+Personajes/Jugador.tscn
+
+Después se podrá planificar la evolución de personajes y animaciones
+sin modificar innecesariamente los sistemas ya existentes.
+
+IMPORTANTE:
+Esta guía describe el estado comprobado en los archivos revisados
+del repositorio. No sustituye una nueva inspección del código cuando
+se retome el trabajo.
+
+FIN DE LA GUIA DE CONTINUIDAD
 ============================================================

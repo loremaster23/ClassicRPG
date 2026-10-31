@@ -1,3 +1,11 @@
-# Godot 4+ specific ignores
+﻿# Godot 4+ specific ignores
 .godot/
 /android/
+
+# Copias de seguridad locales: no publicar en GitHub
+**/*RESPALDO*
+
+# Archivos auxiliares vacíos o antiguos, sin referencias
+/scripts/cliente/Jugador.gd
+/scripts/cliente/Jugador.gd.uid
+/scripts/servidor/Servidor.gd.txt
