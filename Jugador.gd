@@ -8,6 +8,7 @@ const GRAVEDAD := 24.0
 const SALTO := 8.0
 
 var camara
+var es_local := true
 @onready var modelo: Node3D = $Modelo
 @onready var pierna_izq: Node3D = $Modelo/PiernaIzq
 @onready var pierna_der: Node3D = $Modelo/PiernaDer
@@ -17,9 +18,13 @@ var camara
 
 var tiempo := 0.0
 var tiempo_paso := 0.0
+var corriendo := false
+var amplitud_animada := 0.0
+var ritmo_animado := 1.0
 
 func _physics_process(delta: float) -> void:
-	tiempo += delta
+	if not es_local:
+		return
 
 	if not is_on_floor():
 		velocity.y -= GRAVEDAD * delta
@@ -68,8 +73,9 @@ func _physics_process(delta: float) -> void:
 	if direccion.length() > 1.0:
 		direccion = direccion.normalized()
 
+	corriendo = Input.is_action_pressed("sprint") and entrada.length_squared() > 0.0
 	var rapidez := VELOCIDAD
-	if Input.is_action_pressed("sprint"):
+	if corriendo:
 		rapidez = VELOCIDAD_CORRER
 
 	var deseada := direccion * rapidez
@@ -83,12 +89,21 @@ func _physics_process(delta: float) -> void:
 	if camera_mode == "linked" and camara:
 		modelo.rotation.y = lerp_angle(modelo.rotation.y, camara.yaw, 12.0 * delta)
 
-	_animar(delta)
+
+func _process(delta: float) -> void:
+	if es_local:
+		_animar(delta)
 
 func _animar(delta: float) -> void:
+	tiempo += delta
 	var rapidez := Vector2(velocity.x, velocity.z).length()
-	var amplitud := clampf(rapidez / VELOCIDAD, 0.0, 1.6)
-	tiempo_paso += delta * (4.0 + rapidez * 1.4)
+	var amplitud_objetivo := clampf(rapidez / VELOCIDAD, 0.0, 1.6)
+	amplitud_animada = lerpf(amplitud_animada, amplitud_objetivo, minf(delta * 8.0, 1.0))
+	var amplitud := amplitud_animada
+	var factor_ritmo_objetivo := 1.35 if corriendo else 1.0
+	ritmo_animado = lerpf(ritmo_animado, factor_ritmo_objetivo, minf(delta * 5.0, 1.0))
+	var factor_ritmo := ritmo_animado
+	tiempo_paso += delta * (4.0 + rapidez * 1.4) * factor_ritmo
 	var balanceo := sin(tiempo_paso) * 0.65 * amplitud
 
 	pierna_izq.rotation.x = balanceo

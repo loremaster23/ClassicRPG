@@ -10,6 +10,7 @@ const NUM_ROCAS := 24
 const EscenaJugador := preload("res://Personajes/Jugador.tscn")
 const EscenaCamara := preload("res://Camaras/Camara.tscn")
 
+const ScriptMultijugador := preload("res://scripts/cliente/Multijugador.gd")
 var ruido: FastNoiseLite
 var ruido_detalle: FastNoiseLite
 var material_terreno: StandardMaterial3D
@@ -98,7 +99,9 @@ func _crear_jugador() -> void:
 	add_child(camara)
 	camara.objetivo = jugador
 	jugador.camara = camara
-
+	var multijugador = ScriptMultijugador.new()
+	add_child(multijugador)
+	multijugador.iniciar(jugador)
 func _crear_hud() -> void:
 	var capa := CanvasLayer.new()
 	add_child(capa)

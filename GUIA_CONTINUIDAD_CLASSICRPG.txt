@@ -1,0 +1,422 @@
+﻿GUIA DE CONTINUIDAD - CLASSICRPG
+Actualizada: 31/10/2026
+
+========================================
+1. OBJETIVO
+========================================
+
+Crear un MMORPG 3D inspirado en WoW Classic.
+
+- Solo humanos.
+- Estética similar a WoW Classic.
+- Combate mediante selección de objetivo.
+- Arquitectura cliente-servidor.
+- Juego en PC y futuro acceso desde navegador móvil.
+
+2. ENTORNO
+========================================
+
+Proyecto:
+C:\Users\Bruker\OneDrive\DESARROLLO_RPG\ClassicRPG
+
+GitHub:
+https://github.com/loremaster23/ClassicRPG.git
+
+Motor:
+Godot 4.7.2.stable.official.ed1daf0bf
+
+Sistema:
+Windows y PowerShell.
+
+3. ESTRUCTURA
+========================================
+
+ClassicRPG/
+  escenas/
+    cliente/
+    servidor/
+  scripts/
+    cliente/
+    servidor/
+    compartido/
+  datos/
+    personajes/
+    enemigos/
+    objetos/
+    habilidades/
+  Camaras/
+  Mapa1/
+  Personajes/
+
+No sobrescribir los recursos anteriores sin necesidad:
+Mapa1/Escena1.tscn, Main.gd, Jugador.gd y Camara.gd.
+
+Commit inicial:
+cf6f77d Create client server project architecture
+
+4. FASES Y PROGRESO
+========================================
+
+FASE 1 - ARQUITECTURA
+ESTADO: COMPLETADA.
+
+- Separación cliente y servidor.
+- Organización de carpetas.
+- Proyecto conectado a GitHub.
+
+FASE 2 - CONEXIÓN MULTIJUGADOR
+ESTADO: EN PRUEBAS.
+
+- Comunicación WebSocket.
+- Puerto 9000.
+- Límite previsto de 2 jugadores.
+- Recepción de mensajes.
+- Falta verificar conexiones, desconexiones y reutilización de plazas.
+
+FASE 3 - SINCRONIZACIÓN
+ESTADO: PENDIENTE.
+
+- Jugadores visibles entre sí.
+- Sincronización de posición y movimiento.
+
+FASE 4 - PERSONAJES
+ESTADO: PENDIENTE.
+
+- Creación.
+- Selección.
+- Guardado.
+
+FASE 5 - SISTEMAS DEL MUNDO
+ESTADO: PENDIENTE.
+
+- Enemigos.
+- Combate.
+- Objetos.
+- Habilidades.
+- Entidades.
+
+FASE 6 - BASE DE DATOS
+ESTADO: PENDIENTE.
+
+- Persistencia de personajes.
+- Guardado de progreso.
+- Datos del mundo.
+
+FASE 7 - NAVEGADOR Y MÓVILES
+ESTADO: PENDIENTE.
+
+- Acceso desde navegador.
+- Controles móviles.
+- Conexión remota al servidor.
+
+5. SERVIDOR ACTUAL
+========================================
+
+Archivo:
+scripts/servidor/Servidor.gd
+
+Código:
+
+extends Node
+
+const PUERTO := 9000
+const MAX_JUGADORES := 2
+
+var servidor := WebSocketMultiplayerPeer.new()
+var jugadores := 0
+
+func _ready() -> void:
+    servidor.peer_connected.connect(_al_conectar)
+    servidor.peer_disconnected.connect(_al_desconectar)
+
+    var error := servidor.create_server(PUERTO, "*")
+
+    if error != OK:
+        push_error("No se pudo iniciar el servidor: %s" % error)
+        return
+
+    print("Servidor iniciado. Máximo de jugadores: ", MAX_JUGADORES)
+
+func _process(_delta: float) -> void:
+    servidor.poll()
+
+    while servidor.get_available_packet_count() > 0:
+        var id := servidor.get_packet_peer()
+        var mensaje := servidor.get_packet()
+        print("Jugador ", id, ": ", mensaje.get_string_from_utf8())
+
+func _al_conectar(id: int) -> void:
+    jugadores += 1
+    print("Jugador conectado: ", id, " | ", jugadores, "/", MAX_JUGADORES)
+
+    if jugadores >= MAX_JUGADORES:
+        servidor.refuse_new_connections = true
+        print("Servidor lleno. No acepta más conexiones.")
+
+func _al_desconectar(id: int) -> void:
+    jugadores -= 1
+    print("Jugador desconectado: ", id, " | ", jugadores, "/", MAX_JUGADORES)
+    servidor.refuse_new_connections = false
+
+func _exit_tree() -> void:
+    servidor.close()
+
+Escena:
+escenas/servidor/Servidor.tscn
+
+6. CLIENTE DE PRUEBA ACTUAL
+========================================
+
+Archivo:
+scripts/cliente/ClientePrueba.gd
+
+Código:
+
+extends Node
+
+const DIRECCION := "ws://127.0.0.1:9000"
+
+var cliente := WebSocketMultiplayerPeer.new()
+var mensaje_enviado := false
+var tiempo := 0.0
+
+func _ready() -> void:
+    var error := cliente.create_client(DIRECCION)
+
+    if error != OK:
+        push_error("Error al conectar: %s" % error)
+        get_tree().quit()
+        return
+
+    print("Conectando con el servidor...")
+
+func _process(delta: float) -> void:
+    cliente.poll()
+    tiempo += delta
+
+    var estado := cliente.get_connection_status()
+
+    if estado == MultiplayerPeer.CONNECTION_CONNECTED and not mensaje_enviado:
+        var error := cliente.put_packet("Hola desde el cliente".to_utf8_buffer())
+
+        if error == OK:
+            print("Conectado. Mensaje enviado correctamente.")
+            mensaje_enviado = true
+
+    if estado == MultiplayerPeer.CONNECTION_DISCONNECTED and tiempo > 10.0:
+        push_error("No se pudo mantener la conexión.")
+        get_tree().quit()
+
+    if mensaje_enviado and tiempo > 60.0:
+        print("Finalizando cliente de prueba.")
+        cliente.close()
+        get_tree().quit()
+
+func _exit_tree() -> void:
+    cliente.close()
+
+Escena:
+escenas/cliente/ClientePrueba.tscn
+
+El cliente envía un mensaje al servidor y finaliza después de 60 segundos.
+
+7. PRUEBAS ANTERIORES
+========================================
+
+Una ejecución anterior registró dos clientes conectados.
+
+Ambos enviaron:
+Hola desde el cliente
+
+Después ambos se desconectaron y el contador regresó a 0/2.
+
+El cliente mostró:
+Conectado. Mensaje enviado correctamente.
+Finalizando cliente de prueba.
+
+Estos registros pertenecen a una prueba anterior. No demuestran que la ejecución actual esté funcionando.
+
+8. ESTADO ACTUAL DE LA INVESTIGACIÓN
+========================================
+
+Proceso de servidor identificado:
+
+PID: 21732
+Proceso: Godot_v4.7.2-stable_win64
+Inicio: 31/10/2026 01:57:11
+Responding: True
+
+Se encontró asociado al puerto 9000:
+
+LocalAddress: ::
+LocalPort: 9000
+RemoteAddress: ::
+RemotePort: 0
+State: vacío
+OwningProcess: 21732
+
+La consulta filtrada por State Listen no encontró resultados.
+
+Por tanto, todavía no está confirmado que el servidor acepte conexiones.
+
+Los registros consultados parecen antiguos.
+
+Rutas de registros:
+
+$env:TEMP\ClassicRPG-servidor.log
+$env:TEMP\ClassicRPG-servidor-error.log
+$env:TEMP\ClassicRPG-cliente1.log
+$env:TEMP\ClassicRPG-cliente1-error.log
+
+9. ÚLTIMO PASO PENDIENTE
+========================================
+
+El último comando enviado fue:
+
+Test-NetConnection 127.0.0.1 -Port 9000 -InformationLevel Detailed
+
+El usuario todavía no ha compartido el resultado.
+
+PRIMERO:
+Esperar el resultado y comprobar TcpTestSucceeded.
+
+NO iniciar otro cliente todavía.
+
+Después:
+1. Confirmar que el servidor acepta conexiones.
+2. Iniciar un solo cliente.
+3. Verificar una única conexión.
+4. Verificar recepción del mensaje.
+5. Comprobar desconexión.
+6. Confirmar contador 0/2.
+7. Probar una nueva conexión.
+8. Probar dos clientes.
+9. Comprobar rechazo del tercero.
+10. Comprobar liberación de una plaza.
+
+No avanzar a la Fase 3 hasta terminar estas pruebas.
+
+10. INSTRUCCIONES PARA LA SIGUIENTE IA
+========================================
+
+- Hablar español.
+- Ser breve y directo.
+- Trabajar con un solo comando PowerShell por vez.
+- Esperar el resultado antes de continuar.
+- No iniciar clientes adicionales sin autorización.
+- No cerrar procesos ni modificar archivos sin explicar el motivo.
+- No inventar resultados.
+- Verificar rutas y sintaxis.
+- Continuar desde el último paso pendiente.
+- Actualizar esta guía cuando cambie el progreso.
+
+FIN DE LA GUIA
+
+==================================================
+ACTUALIZACION DE PROGRESO - 31/10/2026
+==================================================
+
+FASE 2: COMUNICACION CLIENTE-SERVIDOR
+ESTADO: COMPLETADA Y VERIFICADA
+
+Pruebas realizadas:
+- Dos clientes conectados simultaneamente.
+- Tercer cliente rechazado al alcanzar el limite.
+- Mensaje SERVIDOR_LLENO recibido correctamente.
+- Desconexion automatica de los dos clientes.
+- Contador actualizado correctamente de 2/2 a 0/2.
+- Nuevo cliente aceptado despues de liberar las plazas.
+
+Resultado: servidor WebSocket operativo, limite de dos jugadores y gestion de conexiones y desconexiones comprobada.
+
+FASE 3: SINCRONIZACION DE JUGADORES
+ESTADO: PENDIENTE
+
+Proximos objetivos:
+- Asignar identidad a cada jugador.
+- Sincronizar posiciones mediante el servidor.
+- Distribuir movimientos a los demas clientes.
+- Mostrar otros jugadores en el mundo 3D.
+- Probar movimiento simultaneo.
+
+No se han iniciado todavia los trabajos de la fase 3.
+
+
+
+============================================================
+ACTUALIZACIÓN DE PROGRESO - 31/10/2026
+FASE 3: SINCRONIZACIÓN MULTIJUGADOR
+============================================================
+
+PROGRESO COMPLETADO:
+
+- Integrado scripts/cliente/Multijugador.gd en Main.gd.
+- El cliente inicia conexión WebSocket con ws://127.0.0.1:9000.
+- Servidor funcional en el puerto 9000.
+- Capacidad configurada: máximo 2 jugadores simultáneos.
+- Servidor iniciado correctamente mediante Godot en modo headless.
+- Primer cliente conectado e identificado correctamente por el servidor.
+- Segundo cliente conectado correctamente.
+- Ambos personajes aparecen en las dos instancias del juego.
+- Movimiento y acciones de los personajes se reflejan en el otro cliente.
+- Sincronización básica comprobada visualmente en ambos sentidos.
+- Inicialización del proyecto y comprobación de scripts realizadas sin errores visibles.
+
+RESULTADO:
+La conexión cliente-servidor y la sincronización básica de dos jugadores
+están funcionando en el mapa principal de ClassicRPG.
+
+ESTADO DE LA FASE 3:
+Conexión multijugador y sincronización básica: COMPLETADAS Y VERIFICADAS.
+
+SIGUIENTES OBJETIVOS:
+1. Revisar y mejorar sincronización de orientación y animaciones.
+2. Implementar enemigos compartidos.
+3. Implementar combate sincronizado y validación del servidor.
+4. Sincronizar habilidades, daño y efectos.
+5. Implementar botín y persistencia de personajes.
+
+NOTA:
+Esta actualización se añade al final de la guía. El contenido anterior
+se conserva sin reescritura ni modificaciones.
+============================================================
+
+============================================================
+ESTADO OFICIAL - 31/10/2026 - PUBLICACION FASE 3
+============================================================
+
+FASE 1: ARQUITECTURA - COMPLETADA.
+FASE 2: CONEXION CLIENTE-SERVIDOR - COMPLETADA Y VERIFICADA.
+FASE 3: SINCRONIZACION BASICA - COMPLETADA Y VERIFICADA.
+
+PRUEBA REAL:
+- Servidor Godot PID 8660.
+- Cliente 1 PID 10764.
+- Cliente 2 PID 9340.
+- Puerto WebSocket 9000.
+- Dos conexiones TCP establecidas.
+- Ambos personajes visibles en ambas instancias.
+- Movimientos y acciones sincronizados en ambos sentidos.
+- Godot 4.7.2 completa el escaneo del proyecto sin errores visibles.
+
+ARCHIVOS PRINCIPALES:
+- Jugador.gd
+- Main.gd
+- scripts/cliente/ClientePrueba.gd
+- scripts/cliente/Multijugador.gd
+- scripts/servidor/Servidor.gd
+
+LIMITACION ACTUAL:
+La direccion del cliente utiliza ws://127.0.0.1:9000.
+El acceso desde otros equipos y por Internet queda pendiente.
+
+PROXIMA FASE:
+- Desconexion y eliminacion de personajes remotos.
+- Sincronizacion mejorada de animaciones.
+- Enemigos compartidos.
+- Combate y validacion de daño en servidor.
+- Persistencia de personajes.
+
+Los respaldos locales no forman parte de la publicacion.
+
+============================================================
