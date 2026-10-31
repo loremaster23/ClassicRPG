@@ -18,8 +18,8 @@ var distancia := 8.0
 var distancia_objetivo := 8.0
 
 # Estados independientes para cada boton
-var _orbiting := false   # boton derecho (camera_orbit_character) - activa modo linked
-var _freeorbiting := false # boton izquierdo (camera_orbit_free) - activa modo free
+var _orbiting := false
+var _freeorbiting := false
 
 func _ready() -> void:
 	camara = $Camera3D
@@ -52,33 +52,29 @@ func _colocar_camara() -> void:
 	camara.look_at(foco, Vector3.UP)
 
 func _unhandled_input(evento: InputEvent) -> void:
-	# Detectar pulsaciones y liberaciones usando eventos de ratón y actions InputMap
 	if evento is InputEventMouseButton:
-		# Boton derecho: camera_orbit_character
 		if evento.button_index == MOUSE_BUTTON_RIGHT:
-			if evento.pressed:
-				_orbiting = true
-			else:
-				# Siempre establece _orbiting = false al liberar
-				# No desactives _freeorbiting. Así, si el izquierdo continúa pulsado, el modo libre seguirá activo.
-				_orbiting = false
+			_orbiting = evento.pressed
+			_actualizar_modo_raton()
 
-		# Boton izquierdo: camera_orbit_free
 		if evento.button_index == MOUSE_BUTTON_LEFT:
-			if evento.pressed:
-				_freeorbiting = true
-			else:
-				_freeorbiting = false
+			_freeorbiting = evento.pressed
+			_actualizar_modo_raton()
 
-	# Zoom mediante acciones del InputMap
 	if evento is InputEventMouseButton:
 		if Input.is_action_pressed("camera_zoom_in"):
 			distancia_objetivo = maxf(distancia_objetivo - 0.8, DISTANCIA_MIN)
 		elif Input.is_action_pressed("camera_zoom_out"):
 			distancia_objetivo = minf(distancia_objetivo + 0.8, DISTANCIA_MAX)
 
-	# Rotar la cámara - procesar motion despues de los events
 	if evento is InputEventMouseMotion and (_orbiting or _freeorbiting):
-		# Rotar tanto si esta en modo linked como en modo free
 		yaw -= evento.relative.x * SENSIBILIDAD
 		pitch = clampf(pitch + evento.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX)
+
+func _actualizar_modo_raton() -> void:
+	if _orbiting or _freeorbiting:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+	print("RATON: ", Input.mouse_mode, " | DERECHO: ", _orbiting, " | IZQUIERDO: ", _freeorbiting)

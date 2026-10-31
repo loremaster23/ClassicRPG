@@ -1,3 +1,4 @@
+
 extends CharacterBody3D
 ## Caballero low-poly controlable: movimiento, salto, sprint y animacion simple.
 
@@ -19,6 +20,7 @@ var es_local := true
 var tiempo := 0.0
 var tiempo_paso := 0.0
 var corriendo := false
+var en_el_aire := false
 var amplitud_animada := 0.0
 var ritmo_animado := 1.0
 
@@ -36,7 +38,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = SALTO
 
 	# Determinar modo activo desde el estado de camara
-	# Misma indentación que var entrada
+	# Misma indentaciÃ³n que var entrada
 	var camera_mode := "character"
 	if camara and camara._orbiting:
 		camera_mode = "linked"
@@ -83,6 +85,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = move_toward(velocity.z, deseada.z, ACELERACION * delta)
 
 	move_and_slide()
+	en_el_aire = not is_on_floor()
 
 	# Modo linked: orientar personaje hacia camara.yaw independientemente del movimiento
 	# Modo free/character: NO rotar automaticamente (se conserva orientacion actual)
@@ -105,14 +108,26 @@ func _animar(delta: float) -> void:
 	var factor_ritmo := ritmo_animado
 	tiempo_paso += delta * (4.0 + rapidez * 1.4) * factor_ritmo
 	var balanceo := sin(tiempo_paso) * 0.65 * amplitud
+	if amplitud < 0.01:
+		balanceo = 0.0
 
 	pierna_izq.rotation.x = balanceo
 	pierna_der.rotation.x = -balanceo
 	brazo_izq.rotation.x = -balanceo * 0.8
 	brazo_der.rotation.x = balanceo * 0.8
 
-	var quieto := 1.0 - clampf(rapidez / VELOCIDAD, 0.0, 1.0)
+	if en_el_aire:
+		var factor_postura := minf(delta * 10.0, 1.0)
+		var postura_piernas := -0.30 if velocity.y > 0.0 else 0.20
+		var postura_brazos := -0.65 if velocity.y > 0.0 else -0.35
+		pierna_izq.rotation.x = lerpf(pierna_izq.rotation.x, postura_piernas, factor_postura)
+		pierna_der.rotation.x = lerpf(pierna_der.rotation.x, postura_piernas, factor_postura)
+		brazo_izq.rotation.x = lerpf(brazo_izq.rotation.x, postura_brazos, factor_postura)
+		brazo_der.rotation.x = lerpf(brazo_der.rotation.x, postura_brazos, factor_postura)
+
+	var quieto := 0.0 if en_el_aire else 1.0 - clampf(rapidez / VELOCIDAD, 0.0, 1.0)
 	modelo.position.y = sin(tiempo * 2.2) * 0.015 * quieto
 
 	if capa:
 		capa.rotation.x = -0.06 + sin(tiempo * 3.0) * 0.03 + clampf(rapidez * 0.02, 0.0, 0.18)
+

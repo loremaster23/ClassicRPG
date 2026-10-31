@@ -420,3 +420,72 @@ PROXIMA FASE:
 Los respaldos locales no forman parte de la publicacion.
 
 ============================================================
+
+
+============================================================
+ACTUALIZACION DE PROGRESO - 31/10/2026
+RECHAZO DE JUGADORES Y PANTALLA DE SERVIDOR LLENO
+============================================================
+
+PROGRESO COMPLETADO:
+
+SERVIDOR:
+- MAX_JUGADORES permanece configurado en 2.
+- Puerto WebSocket: 9000.
+- Se corrigió el uso de get_peers(), que no existe en WebSocketMultiplayerPeer.
+- El rechazo utiliza disconnect_peer() y la consulta get_peer(id).
+- Se mantiene el mensaje SERVIDOR_LLENO.
+- Se mantiene el temporizador de rechazo de 0.5 segundos.
+
+CLIENTE:
+- Archivo: scripts/cliente/Multijugador.gd.
+- Detecta el mensaje SERVIDOR_LLENO.
+- Detiene el procesamiento multijugador del cliente rechazado.
+- Elimina el personaje local mediante queue_free().
+- Elimina los personajes remotos y limpia sus referencias.
+- Evita que el personaje rechazado permanezca flotando en el escenario.
+
+PANTALLA DE RECHAZO:
+- Imagen: assets/ui/servidor_lleno.png.
+- Imagen importada correctamente por Godot.
+- Se muestra a pantalla completa.
+- Se utiliza CanvasLayer con prioridad visual elevada.
+- El tercer jugador ve únicamente el paisaje, sin personajes.
+
+PRUEBAS Y VERIFICACIONES:
+- Dos clientes conectados y visibles entre sí.
+- Movimiento de ambos clientes comprobado anteriormente.
+- Tercer cliente recibe SERVIDOR_LLENO.
+- Tercer cliente muestra la pantalla de paisaje sin personaje.
+- Escaneo del proyecto e importación de imagen completados sin errores visibles.
+
+RESULTADO:
+El límite de dos jugadores se mantiene.
+El tercer cliente recibe una pantalla visual de servidor lleno
+en lugar de quedarse con un personaje flotando.
+
+ARCHIVOS MODIFICADOS EN ESTE AVANCE:
+- scripts/servidor/Servidor.gd
+- scripts/cliente/Multijugador.gd
+- assets/ui/servidor_lleno.png
+
+RESPALDO LOCAL:
+ClassicRPG_RESPALDO_20261031
+
+Ubicación:
+C:\Users\Bruker\OneDrive\DESARROLLO_RPG\ClassicRPG_RESPALDO_20261031
+
+El respaldo contiene 70 archivos y excluye la caché regenerable .godot.
+El proyecto original no fue modificado por la operación de respaldo.
+
+PUNTO DE CONTINUIDAD:
+La siguiente IA debe comenzar leyendo esta guía y revisando
+los archivos actuales antes de modificar cualquier código.
+
+No asumir que pruebas no realizadas están completadas.
+Mantener el límite de dos jugadores y no romper la sincronización
+multijugador ya comprobada.
+
+============================================================
+FIN DE ACTUALIZACION
+============================================================
