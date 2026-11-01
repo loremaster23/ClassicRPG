@@ -37,6 +37,8 @@ var ruido_detalle: FastNoiseLite
 
 var arboles: Array[Dictionary] = []
 var rocas: Array[Dictionary] = []
+var tiempo_ia_entidades := 0.0
+var paso_patrulla_lobo := 0
 
 
 func _ready() -> void:
@@ -63,8 +65,9 @@ func _inicializar_mundo() -> void:
 	rocas = GeneradorTerreno.generar_rocas()
 
 
-	_registrar_entidad("prueba", Vector3(0.0, _altura_terreno(0.0, 0.0) + 0.5, 0.0), "Entidad de prueba")
-	_registrar_entidad("npc", Vector3(3.0, _altura_terreno(3.0, 0.0), 0.0), "Habitante")
+	_registrar_entidad("prueba", Vector3(0.0, _altura_terreno(0.0, 0.0) + 0.5, 0.0), "Entidad de prueba", 0.0, 100, 100, "activo")
+	_registrar_entidad("npc", Vector3(3.0, _altura_terreno(3.0, 0.0), 0.0), "Habitante", 0.0, 100, 100, "idle")
+	_registrar_entidad("lobo", Vector3(-3.0, _altura_terreno(-3.0, 0.0), 0.0), "Lobo del Bosque", 0.0, 60, 60, "patrullando")
 	print("Mundo compartido inicializado.")
 	print("Árboles generados: ", arboles.size())
 	print("Rocas generadas: ", rocas.size())
@@ -119,7 +122,15 @@ func _lista_entidades() -> Array:
 	return lista
 
 
-func _registrar_entidad(tipo: String, posicion: Vector3, nombre: String = "") -> int:
+func _registrar_entidad(
+	tipo: String,
+	posicion: Vector3,
+	nombre: String = "",
+	yaw: float = 0.0,
+	hp: int = 100,
+	hp_max: int = 100,
+	estado: String = "idle"
+) -> int:
 	var id := siguiente_id_entidad
 	siguiente_id_entidad += 1
 
@@ -129,7 +140,12 @@ func _registrar_entidad(tipo: String, posicion: Vector3, nombre: String = "") ->
 		"name": nombre,
 		"x": posicion.x,
 		"y": posicion.y,
-		"z": posicion.z
+		"z": posicion.z,
+		"yaw": yaw,
+		"hp": hp,
+		"hp_max": hp_max,
+		"estado": estado,
+		"activo": true
 	}
 
 	entidades[id] = entidad
@@ -140,8 +156,33 @@ func _registrar_entidad(tipo: String, posicion: Vector3, nombre: String = "") ->
 			"entity": entidad
 		})
 
-	print("Entidad registrada: ", id, " | ", tipo)
+	print("Entidad registrada: ", id, " | ", tipo, " | ", nombre)
 	return id
+
+
+func _obtener_entidad(id: int) -> Dictionary:
+	if entidades.has(id):
+		return entidades[id].duplicate(true)
+	return {}
+
+
+func _actualizar_entidad(id: int, cambios: Dictionary) -> void:
+	if not entidades.has(id):
+		return
+
+	var entidad: Dictionary = entidades[id]
+	for clave in cambios.keys():
+		entidad[clave] = cambios[clave]
+
+	var paquete := {
+		"type": "entity_updated",
+		"id": id
+	}
+	for clave in cambios.keys():
+		paquete[clave] = cambios[clave]
+
+	if not jugadores.is_empty():
+		_difundir(paquete)
 
 
 func _eliminar_entidad(id: int) -> void:
@@ -157,8 +198,43 @@ func _eliminar_entidad(id: int) -> void:
 
 	print("Entidad eliminada: ", id)
 
+
+func _actualizar_ia_entidades(delta: float) -> void:
+	if not entidades.has(3) or jugadores.is_empty():
+		return
+
+	tiempo_ia_entidades += delta
+	if tiempo_ia_entidades < 3.0:
+		return
+
+	tiempo_ia_entidades = 0.0
+	paso_patrulla_lobo = (paso_patrulla_lobo + 1) % 4
+
+	var waypoints := [
+		Vector2(-3.0, 0.0),
+		Vector2(-2.0, -1.5),
+		Vector2(-3.0, -3.0),
+		Vector2(-4.0, -1.5)
+	]
+
+	var objetivo: Vector2 = waypoints[paso_patrulla_lobo]
+	var pos_actual := Vector2(float(entidades[3]["x"]), float(entidades[3]["z"]))
+	var dir := objetivo - pos_actual
+	var yaw: float = atan2(dir.x, dir.y)
+
+	var altura := _altura_terreno(objetivo.x, objetivo.y)
+
+	_actualizar_entidad(3, {
+		"x": objetivo.x,
+		"y": altura,
+		"z": objetivo.y,
+		"yaw": yaw,
+		"estado": "patrullando"
+	})
+
 func _process(delta: float) -> void:
 	servidor.poll()
+	_actualizar_ia_entidades(delta)
 
 	for id_var in rechazos_pendientes.keys():
 		var id := int(id_var)

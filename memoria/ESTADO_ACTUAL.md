@@ -423,3 +423,81 @@ Comprobado:
 
 No probado:
 - Partida de dos clientes con movimiento simultáneo.
+
+## 17. HITO FASE 5 — CICLO DE VIDA Y ESTADO DE ENTIDADES — 01/11/2026
+
+Cambios aplicados:
+- `Servidor.gd`:
+  - Entidades ampliadas con estructura completa de estado: `id`, `type`, `name`, `x`, `y`, `z`, `yaw`, `hp`, `hp_max`, `estado`, `activo`.
+  - Entidad 1 (`prueba`): vida 100/100, estado `activo`.
+  - Entidad 2 (`npc`): "Habitante", vida 100/100, estado `idle`.
+  - Añadida función `_actualizar_entidad(id, cambios)` que propaga los cambios a `entidades[id]` y difunde el mensaje `entity_updated` en red.
+  - Añadida función `_obtener_entidad(id)` para consultar el estado actual.
+- `Multijugador.gd`:
+  - Separación entre datos de red (`datos_entidades`), objetivos espaciales (`objetivos_entidades`) y nodos visuales (`entidades_remotas`).
+  - Procesamiento del mensaje `entity_updated`: actualiza datos, posición, rotación `yaw` y nombre si procede.
+  - Implementada interpolación suave de posición y rotación mediante `_actualizar_entidades_remotas(delta)` en `_process`.
+  - Limpieza de datos y objetivos en `_eliminar_entidad_remota` y en `_mostrar_servidor_lleno`.
+- `herramientas/PruebaEstadoEntidades.gd`:
+  - Nueva prueba automatizada que valida la estructura de campos de las entidades, la función `_actualizar_entidad` y la eliminación.
+
+Comprobado:
+- `herramientas/PruebaEstadoEntidades.gd`: código de salida 0.
+- `herramientas/PruebaFabricaEntidades.gd`: código de salida 0.
+- `herramientas/PruebaNPCServidor.gd`: código de salida 0.
+- Los 10 scripts del proyecto pasan `--check-only` con código de salida 0.
+- Escena principal `Mapa1/Escena1.tscn` en headless arranca e inicializa mapa y multijugador sin errores.
+
+Comprobado adicionalmente:
+- Verificación visual interactiva en ventana de juego confirmada por el usuario: esfera azul (ID 1) y NPC "Habitante" (ID 2) visibles en el mundo en ejecución con servidor activo.
+
+No probado:
+- Partida de dos clientes con movimiento simultáneo.
+
+## 18. HITO FASE 5 — CRIATURA LOBO Y PATRULLA BÁSICA AUTORITATIVA — 01/11/2026
+
+Cambios aplicados:
+- FabricaEntidades.gd:
+  - Añadido el tipo "lobo": modelo cuadrúpedo con mallas primitivas (cuerpo, cabeza, 4 patas) y material acorde (marrón oscuro/grisáceo). Etiqueta de nombre destacada en color rojizo (Lobo del Bosque).
+- Servidor.gd:
+  - Registrada la entidad ID 3 tipo "lobo", 60/60 HP, estado "patrullando" en coordenadas del bosque (-4.0, 4.0).
+  - Añadida rutina periódica de IA de patrulla autoritativa _actualizar_ia_entidades(delta): rota y avanza entre waypoints calculando la altura del terreno con _altura_terreno() y el ángulo yaw, transmitiendo su estado mediante _actualizar_entidad().
+- herramientas/:
+  - Actualizadas PruebaFabricaEntidades.gd, PruebaNPCServidor.gd y PruebaEstadoEntidades.gd para incluir la validación del lobo (6 mallas sin nombre, registro de 3 entidades y actualización de estado).
+
+Comprobado:
+- herramientas/PruebaFabricaEntidades.gd: código de salida 0.
+- herramientas/PruebaNPCServidor.gd: código de salida 0.
+- herramientas/PruebaEstadoEntidades.gd: código de salida 0.
+- Los 10 scripts del proyecto pasan --check-only con código de salida 0.
+- Escena principal Mapa1/Escena1.tscn en headless arranca sin errores.
+
+No probado:
+- Partida de dos clientes con movimiento simultáneo.
+
+## 19. HITO FASE 5 — SISTEMA DE SELECCIÓN DE OBJETIVOS (TARGETING) Y HUD — 01/11/2026
+
+Cambios aplicados:
+- Multijugador.gd:
+  - Implementado sistema de selección de objetivos (targeting) con señal objetivo_cambiado(id, datos, nodo).
+  - Acción select_next_target (tecla Tab): cicla entre las entidades remotas disponibles ordenadas por distancia al jugador.
+  - Tecla Escape: deselecciona el objetivo activo.
+  - Al recibir entity_updated en la entidad fijada, se emite la señal para refrescar el HUD de objetivo automáticamente.
+  - Al eliminarse la entidad (_eliminar_entidad_remota), se limpia el objetivo seleccionado.
+- Main.gd:
+  - Panel de marco de objetivo (Target Frame): contenedor con estilo visual MMORPG clásico (PanelContainer) que muestra: Nombre del objetivo, barra de vida (ProgressBar con valor actual y máximo), tipo y estado actual. Permanece oculto si no hay objetivo.
+  - Indicador 3D circular en el suelo: aro dorado con brillo (TorusMesh con emisión) que sigue en tiempo real la posición sobre el terreno de la entidad seleccionada.
+  - Controles actualizados en el HUD inicial para indicar Tab: objetivo y Escape: limpiar objetivo.
+- herramientas/PruebaTargeting.gd:
+  - Nueva suite de prueba que verifica la selección secuencial por distancia, ciclo continuo y deselección con código de salida 0.
+
+Comprobado:
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- herramientas/PruebaTargeting.gd: código 0.
+- Los 11 scripts del proyecto pasan --check-only con código de salida 0.
+- Escena principal Mapa1/Escena1.tscn en headless arranca sin errores (código 0).
+
+No probado:
+- Partida de dos clientes con movimiento simultáneo.

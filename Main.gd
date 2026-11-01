@@ -17,6 +17,14 @@ var ruido: FastNoiseLite
 var ruido_detalle: FastNoiseLite
 var material_terreno: StandardMaterial3D
 
+var nodo_multijugador: Node
+var panel_objetivo: PanelContainer
+var etiqueta_objetivo_nombre: Label
+var etiqueta_objetivo_info: Label
+var barra_vida_objetivo: ProgressBar
+var indicador_objetivo_3d: MeshInstance3D
+var nodo_objetivo_actual: Node3D = null
+
 
 func _ready() -> void:
 	ruido = GeneradorTerreno.crear_ruido_terreno()
@@ -99,9 +107,10 @@ func _crear_jugador() -> void:
 	camara.objetivo = jugador
 	jugador.camara = camara
 
-	var multijugador = ScriptMultijugador.new()
-	add_child(multijugador)
-	multijugador.iniciar(jugador)
+	nodo_multijugador = ScriptMultijugador.new()
+	add_child(nodo_multijugador)
+	nodo_multijugador.iniciar(jugador)
+	nodo_multijugador.objetivo_cambiado.connect(_al_cambiar_objetivo)
 
 
 func _crear_hud() -> void:
@@ -109,7 +118,7 @@ func _crear_hud() -> void:
 	add_child(capa)
 
 	var etiqueta := Label.new()
-	etiqueta.text = "WASD: mover   ·   Espacio: saltar   ·   Shift: correr\nClic derecho + mouse: rotar cámara   ·   Rueda: zoom   ·   Q/E: girar"
+	etiqueta.text = "WASD: mover   ·   Espacio: saltar   ·   Shift: correr   ·   Tab: objetivo\nClic derecho + mouse: rotar cámara   ·   Rueda: zoom   ·   Escape: limpiar objetivo"
 	etiqueta.position = Vector2(24, 20)
 	etiqueta.add_theme_font_size_override("font_size", 17)
 	etiqueta.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
@@ -121,6 +130,112 @@ func _crear_hud() -> void:
 	var tween := create_tween()
 	tween.tween_interval(9.0)
 	tween.tween_property(etiqueta, "modulate:a", 0.0, 2.5)
+
+	# Panel de marco de objetivo (Target Frame)
+	panel_objetivo = PanelContainer.new()
+	panel_objetivo.position = Vector2(24, 80)
+	panel_objetivo.custom_minimum_size = Vector2(220, 64)
+	panel_objetivo.visible = false
+
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = Color(0.08, 0.09, 0.12, 0.88)
+	estilo.border_width_left = 2
+	estilo.border_width_top = 2
+	estilo.border_width_right = 2
+	estilo.border_width_bottom = 2
+	estilo.border_color = Color(0.7, 0.6, 0.3, 0.9)
+	estilo.corner_radius_top_left = 6
+	estilo.corner_radius_top_right = 6
+	estilo.corner_radius_bottom_right = 6
+	estilo.corner_radius_bottom_left = 6
+	estilo.content_margin_left = 10.0
+	estilo.content_margin_top = 6.0
+	estilo.content_margin_right = 10.0
+	estilo.content_margin_bottom = 6.0
+	panel_objetivo.add_theme_stylebox_override("panel", estilo)
+
+	var contenedor := VBoxContainer.new()
+	contenedor.add_theme_constant_override("separation", 3)
+	panel_objetivo.add_child(contenedor)
+
+	etiqueta_objetivo_nombre = Label.new()
+	etiqueta_objetivo_nombre.text = "Objetivo"
+	etiqueta_objetivo_nombre.add_theme_font_size_override("font_size", 15)
+	etiqueta_objetivo_nombre.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8))
+	contenedor.add_child(etiqueta_objetivo_nombre)
+
+	barra_vida_objetivo = ProgressBar.new()
+	barra_vida_objetivo.custom_minimum_size = Vector2(200, 16)
+	barra_vida_objetivo.show_percentage = false
+	contenedor.add_child(barra_vida_objetivo)
+
+	etiqueta_objetivo_info = Label.new()
+	etiqueta_objetivo_info.text = "Tipo · Estado"
+	etiqueta_objetivo_info.add_theme_font_size_override("font_size", 12)
+	etiqueta_objetivo_info.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
+	contenedor.add_child(etiqueta_objetivo_info)
+
+	capa.add_child(panel_objetivo)
+
+	# Indicador 3D circular en el suelo
+	indicador_objetivo_3d = MeshInstance3D.new()
+	var aro := TorusMesh.new()
+	aro.inner_radius = 0.7
+	aro.outer_radius = 0.85
+	aro.rings = 24
+	aro.ring_segments = 6
+	indicador_objetivo_3d.mesh = aro
+
+	var mat_aro := StandardMaterial3D.new()
+	mat_aro.albedo_color = Color(1.0, 0.85, 0.2, 0.9)
+	mat_aro.emission_enabled = true
+	mat_aro.emission = Color(0.9, 0.75, 0.1, 1.0)
+	mat_aro.emission_energy_multiplier = 1.5
+	mat_aro.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_aro.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	indicador_objetivo_3d.material_override = mat_aro
+	indicador_objetivo_3d.visible = false
+	add_child(indicador_objetivo_3d)
+
+
+func _al_cambiar_objetivo(id: int, datos: Dictionary, nodo: Node3D) -> void:
+	if id <= 0 or nodo == null or not is_instance_valid(nodo):
+		nodo_objetivo_actual = null
+		if panel_objetivo != null:
+			panel_objetivo.visible = false
+		if indicador_objetivo_3d != null:
+			indicador_objetivo_3d.visible = false
+		return
+
+	nodo_objetivo_actual = nodo
+	panel_objetivo.visible = true
+	indicador_objetivo_3d.visible = true
+
+	var nombre: String = str(datos.get("name", "Entidad %d" % id))
+	if nombre.is_empty():
+		nombre = "Entidad %d" % id
+	etiqueta_objetivo_nombre.text = nombre
+
+	var hp: int = int(datos.get("hp", 100))
+	var hp_max: int = int(datos.get("hp_max", 100))
+	barra_vida_objetivo.max_value = hp_max
+	barra_vida_objetivo.value = hp
+
+	var tipo: String = str(datos.get("type", "entidad"))
+	var estado: String = str(datos.get("estado", "activo"))
+	etiqueta_objetivo_info.text = "%s · %s (%d / %d)" % [tipo.capitalize(), estado.capitalize(), hp, hp_max]
+
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(nodo_objetivo_actual) and indicador_objetivo_3d != null and indicador_objetivo_3d.visible:
+		var pos := nodo_objetivo_actual.global_position
+		indicador_objetivo_3d.global_position = Vector3(
+			pos.x,
+			_altura(pos.x, pos.z) + 0.05,
+			pos.z
+		)
+	elif nodo_objetivo_actual != null and not is_instance_valid(nodo_objetivo_actual):
+		_al_cambiar_objetivo(0, {}, null)
 
 
 func _altura(x: float, z: float) -> float:

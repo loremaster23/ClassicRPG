@@ -54,6 +54,47 @@ static func crear(tipo: String, id: int, nombre: String = "") -> Node3D:
 				etiqueta.outline_size = 8
 				entidad.add_child(etiqueta)
 
+		"lobo":
+			var material_lobo := StandardMaterial3D.new()
+			material_lobo.albedo_color = Color(0.42, 0.26, 0.18, 1.0)
+			material_lobo.roughness = 0.85
+
+			var cuerpo := BoxMesh.new()
+			cuerpo.size = Vector3(0.7, 0.6, 1.2)
+			var malla_cuerpo := _crear_malla(cuerpo, material_lobo, "Cuerpo")
+			malla_cuerpo.position.y = 0.55
+			entidad.add_child(malla_cuerpo)
+
+			var cabeza := BoxMesh.new()
+			cabeza.size = Vector3(0.45, 0.45, 0.5)
+			var malla_cabeza := _crear_malla(cabeza, material_lobo, "Cabeza")
+			malla_cabeza.position = Vector3(0.0, 0.75, -0.7)
+			entidad.add_child(malla_cabeza)
+
+			var pata_mesh := BoxMesh.new()
+			pata_mesh.size = Vector3(0.18, 0.5, 0.18)
+			var pos_patas := [
+				Vector3(-0.25, 0.25, 0.4),
+				Vector3(0.25, 0.25, 0.4),
+				Vector3(-0.25, 0.25, -0.4),
+				Vector3(0.25, 0.25, -0.4)
+			]
+			for i in range(pos_patas.size()):
+				var pata := _crear_malla(pata_mesh, material_lobo, "Pata_%d" % i)
+				pata.position = pos_patas[i]
+				entidad.add_child(pata)
+
+			if not nombre.is_empty():
+				var etiqueta := Label3D.new()
+				etiqueta.name = "Nombre"
+				etiqueta.text = nombre
+				etiqueta.position.y = 1.5
+				etiqueta.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				etiqueta.font_size = 32
+				etiqueta.outline_size = 8
+				etiqueta.modulate = Color(1.0, 0.35, 0.35, 1.0)
+				entidad.add_child(etiqueta)
+
 		_:
 			entidad.free()
 			return null

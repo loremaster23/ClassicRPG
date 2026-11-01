@@ -28,9 +28,16 @@ var yaw_correccion := 0.0
 var jugadores_remotos: Dictionary = {}
 var objetivos_remotos: Dictionary = {}
 var entidades_remotas: Dictionary = {}
+var datos_entidades: Dictionary = {}
+var objetivos_entidades: Dictionary = {}
 
 var mundo_validado := false
 var configuracion_mundo: Dictionary = {}
+
+signal objetivo_cambiado(id: int, datos: Dictionary, nodo: Node3D)
+
+var id_objetivo := 0
+var nodo_objetivo: Node3D = null
 
 
 func iniciar(jugador: CharacterBody3D) -> void:
@@ -83,6 +90,7 @@ func _process(delta: float) -> void:
 				_enviar_posicion()
 
 	_actualizar_remotos(delta)
+	_actualizar_entidades_remotas(delta)
 	_actualizar_correccion_local(delta)
 
 
@@ -146,6 +154,9 @@ func _procesar_mensaje(datos: Dictionary) -> void:
 			var entidad = datos.get("entity", {})
 			if typeof(entidad) == TYPE_DICTIONARY:
 				_crear_entidad_remota(entidad)
+
+		"entity_updated":
+			_actualizar_entidad_remota(datos)
 
 		"entity_removed":
 			_eliminar_entidad_remota(int(datos.get("id", 0)))
@@ -331,13 +342,133 @@ func _crear_entidad_remota(datos: Dictionary) -> void:
 	if entidad == null:
 		return
 
+	var yaw := float(datos.get("yaw", 0.0))
+	entidad.rotation.y = yaw
+
 	get_parent().add_child(entidad)
 	entidad.global_position = posicion
 	entidades_remotas[id] = entidad
+	datos_entidades[id] = datos.duplicate(true)
+	objetivos_entidades[id] = {
+		"pos": posicion,
+		"yaw": yaw
+	}
 
 	print("Entidad remota creada: ", id, " | ", tipo)
 
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("select_next_target"):
+		seleccionar_siguiente_objetivo()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if id_objetivo != 0:
+			seleccionar_objetivo(0)
+
+
+func seleccionar_siguiente_objetivo() -> void:
+	var ids: Array = entidades_remotas.keys()
+	if ids.is_empty():
+		return
+
+	if is_instance_valid(jugador_local):
+		var pos_jugador := jugador_local.global_position
+		ids.sort_custom(func(a: int, b: int) -> bool:
+			var nodo_a = entidades_remotas.get(a)
+			var nodo_b = entidades_remotas.get(b)
+			if not is_instance_valid(nodo_a) or not is_instance_valid(nodo_b):
+				return false
+			return nodo_a.global_position.distance_squared_to(pos_jugador) < nodo_b.global_position.distance_squared_to(pos_jugador)
+		)
+
+	var indice_actual := ids.find(id_objetivo)
+	var siguiente_indice: int = (indice_actual + 1) % ids.size()
+	seleccionar_objetivo(ids[siguiente_indice])
+
+
+func seleccionar_objetivo(id: int) -> void:
+	if id <= 0 or not entidades_remotas.has(id):
+		id_objetivo = 0
+		nodo_objetivo = null
+		emit_signal("objetivo_cambiado", 0, {}, null)
+		return
+
+	id_objetivo = id
+	nodo_objetivo = entidades_remotas[id]
+	var datos: Dictionary = datos_entidades.get(id, {})
+	emit_signal("objetivo_cambiado", id, datos, nodo_objetivo)
+
+
+func _actualizar_entidad_remota(datos: Dictionary) -> void:
+	var id := int(datos.get("id", 0))
+
+	if not entidades_remotas.has(id):
+		return
+
+	var entidad = entidades_remotas[id]
+	if not is_instance_valid(entidad):
+		return
+
+	if datos_entidades.has(id):
+		var actuales: Dictionary = datos_entidades[id]
+		for clave in datos.keys():
+			if clave != "type":
+				actuales[clave] = datos[clave]
+
+	var objetivo: Dictionary = objetivos_entidades.get(id, {
+		"pos": entidad.global_position,
+		"yaw": entidad.rotation.y
+	})
+
+	if datos.has("x") or datos.has("y") or datos.has("z"):
+		var x := float(datos.get("x", objetivo["pos"].x))
+		var y := float(datos.get("y", objetivo["pos"].y))
+		var z := float(datos.get("z", objetivo["pos"].z))
+		if is_finite(x) and is_finite(y) and is_finite(z):
+			objetivo["pos"] = Vector3(x, y, z)
+
+	if datos.has("yaw"):
+		var yaw := float(datos["yaw"])
+		if is_finite(yaw):
+			objetivo["yaw"] = yaw
+
+	objetivos_entidades[id] = objetivo
+
+	if datos.has("name"):
+		var etiqueta = entidad.get_node_or_null("Nombre") as Label3D
+		if etiqueta != null:
+			etiqueta.text = str(datos["name"])
+
+	if id == id_objetivo:
+		emit_signal("objetivo_cambiado", id_objetivo, datos_entidades.get(id_objetivo, {}), nodo_objetivo)
+
+
+func _actualizar_entidades_remotas(delta: float) -> void:
+	for id_var in entidades_remotas.keys():
+		var id := int(id_var)
+		var entidad = entidades_remotas[id]
+
+		if not is_instance_valid(entidad):
+			continue
+
+		if not objetivos_entidades.has(id):
+			continue
+
+		var objetivo: Dictionary = objetivos_entidades[id]
+		entidad.global_position = entidad.global_position.lerp(
+			objetivo["pos"],
+			minf(delta * 10.0, 1.0)
+		)
+		entidad.rotation.y = lerp_angle(
+			entidad.rotation.y,
+			float(objetivo["yaw"]),
+			minf(delta * 10.0, 1.0)
+		)
+
+
 func _eliminar_entidad_remota(id: int) -> void:
+	if id == id_objetivo:
+		seleccionar_objetivo(0)
+
 	if not entidades_remotas.has(id):
 		return
 
@@ -347,6 +478,8 @@ func _eliminar_entidad_remota(id: int) -> void:
 		entidad.queue_free()
 
 	entidades_remotas.erase(id)
+	datos_entidades.erase(id)
+	objetivos_entidades.erase(id)
 	print("Entidad remota eliminada: ", id)
 
 func _actualizar_objetivo(
@@ -443,6 +576,7 @@ func _eliminar_remoto(id: int) -> void:
 
 
 func _mostrar_servidor_lleno() -> void:
+	seleccionar_objetivo(0)
 	print("Servidor lleno. Mostrando pantalla de rechazo.")
 
 	conectado = false
@@ -462,6 +596,8 @@ func _mostrar_servidor_lleno() -> void:
 		if is_instance_valid(entidad):
 			entidad.queue_free()
 	entidades_remotas.clear()
+	datos_entidades.clear()
+	objetivos_entidades.clear()
 
 	var capa := CanvasLayer.new()
 	capa.layer = 100

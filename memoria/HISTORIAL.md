@@ -255,3 +255,100 @@ Pendientes:
 
 Autorizacion:
 El usuario pidio corregir los errores y actualizar el proyecto en GitHub.
+
+## 2026-11-01 — Ciclo de vida y estado de entidades (Fase 5)
+
+Objetivo:
+Dar estructura de datos, estado y ciclo de vida a las entidades del mundo en servidor y cliente, preparando la sincronización dinámica y la ampliación de criaturas/NPC.
+
+Trabajo realizado:
+- scripts/servidor/Servidor.gd:
+  - Ampliada la definición de entidad para incluir yaw, hp, hp_max, estado y ctivo.
+  - Entidad 1 inicializada como prueba (hp 100/100, estado ctivo).
+  - Entidad 2 inicializada como 
+pc (nombre "Habitante", hp 100/100, estado idle).
+  - Implementada la función _actualizar_entidad(id, cambios) que propaga modificaciones en memoria y difunde el paquete de red entity_updated.
+  - Implementada la función _obtener_entidad(id) para consulta segura del estado.
+- scripts/cliente/Multijugador.gd:
+  - Separada la estructura de datos de red (datos_entidades), objetivos de interpolación (objetivos_entidades) y nodos visuales (entidades_remotas).
+  - Añadido el manejo del mensaje entity_updated en _procesar_mensaje.
+  - Implementada la interpolación suave de traslación y rotación (_actualizar_entidades_remotas) en cada frame.
+  - Asegurada la limpieza de diccionarios en _eliminar_entidad_remota y _mostrar_servidor_lleno.
+- herramientas/PruebaEstadoEntidades.gd:
+  - Creada suite de prueba que verifica inicialización de campos, actualización de estado con _actualizar_entidad y eliminación con _eliminar_entidad.
+
+Resultado comprobado:
+- herramientas/PruebaEstadoEntidades.gd: código de salida 0.
+- herramientas/PruebaFabricaEntidades.gd: código de salida 0.
+- herramientas/PruebaNPCServidor.gd: código de salida 0.
+- Los 10 scripts del proyecto pasan --check-only con código de salida 0.
+- Escena principal Mapa1/Escena1.tscn en headless arranca e inicializa mapa y multijugador sin errores.
+- Verificación visual interactiva en cliente real confirmada expresamente por el usuario ("si, funciona").
+
+Errores:
+- Ninguno en las pruebas ejecutadas.
+
+Pendientes:
+- Partida de dos clientes con movimiento simultáneo.
+- Diseñar tipos adicionales de entidades (criaturas, enemigos, vendedores).
+- Fase 5 continúa en desarrollo.
+
+Autorización:
+- Modo autónomo: continuación técnica acordada en la guía de Fase 5.
+
+## 2026-11-01 — Criatura Lobo y patrulla básica autoritativa (Fase 5)
+
+Objetivo:
+Incorporar la primera criatura del mundo RPG en la fábrica de entidades y dotarla de comportamiento de patrulla autoritativo gobernado por el servidor.
+
+Trabajo realizado:
+- scripts/cliente/FabricaEntidades.gd:
+  - Implementado el tipo "lobo" (cuerpo, cabeza y 4 patas mediante mallas primitivas con etiqueta de color rojizo para representar criaturas/monstruos).
+- scripts/servidor/Servidor.gd:
+  - Registrada la entidad 3 (lobo, nombre "Lobo del Bosque", 60 HP, estado "patrullando").
+  - Implementada la función _actualizar_ia_entidades(delta) que ejecuta una ruta de patrulla autoritativa periódica actualizando posición, altura sobre el relieve procedural y ángulo yaw.
+- herramientas/:
+  - Actualizadas PruebaFabricaEntidades.gd, PruebaNPCServidor.gd y PruebaEstadoEntidades.gd para validar el nuevo tipo y las 3 entidades activas.
+
+Resultado comprobado:
+- herramientas/PruebaFabricaEntidades.gd: código de salida 0.
+- herramientas/PruebaNPCServidor.gd: código de salida 0.
+- herramientas/PruebaEstadoEntidades.gd: código de salida 0.
+- 10 scripts con --check-only: código 0.
+- Escena principal en headless: código 0.
+
+Pendientes:
+- Prueba visual del lobo y su patrulla en cliente gráfico.
+- Prueba con dos clientes simultáneos.
+- Sistema de selección de objetivo / target para entidades.
+
+## 2026-11-01 — Sistema de selección de objetivos (Targeting) e interfaz de HUD (Fase 5)
+
+Objetivo:
+Implementar la selección de objetivos para entidades del mundo (jugadores remotos, NPC, criaturas) mediante tecla Tab / InputMap, con indicador visual en el suelo y panel de objetivo en el HUD.
+
+Trabajo realizado:
+- scripts/cliente/Multijugador.gd:
+  - Declaradas variables id_objetivo, 
+odo_objetivo y señal objetivo_cambiado(id, datos, nodo).
+  - Implementada función seleccionar_siguiente_objetivo() que prioriza entidades por proximidad geométrica al jugador local.
+  - Implementada función seleccionar_objetivo(id) y captura de select_next_target (Tab) y tecla Escape en _unhandled_input.
+  - Integrada reactividad con entity_updated y _eliminar_entidad_remota.
+- Main.gd:
+  - Construido el Target Frame en el HUD (panel_objetivo con nombre, barra de vida y subtítulo tipo/estado).
+  - Creado aro indicador 3D (indicador_objetivo_3d) que se proyecta sobre el terreno bajo los pies del objetivo seleccionado.
+- herramientas/PruebaTargeting.gd:
+  - Creada suite de prueba unitaria que verifica la selección, ciclado y deselección de objetivos.
+
+Resultado comprobado:
+- herramientas/PruebaTargeting.gd: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- 11 scripts con --check-only: código 0.
+- Escena principal Mapa1/Escena1.tscn en headless: código 0.
+
+Pendientes:
+- Selección alternativa por clic directo del ratón sobre la entidad.
+- Prueba con dos clientes y movimiento simultáneo.
+- Puente hacia combate (Fase 6): ataque básico o habilidad al objetivo fijado.

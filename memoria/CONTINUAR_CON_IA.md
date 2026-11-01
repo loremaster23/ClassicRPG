@@ -360,3 +360,70 @@ Siguiente tarea:
 3. Probar con dos clientes.
 
 No declarar terminada la Fase 5.
+
+## HITO FASE 5 — CICLO DE VIDA Y ESTADO DE ENTIDADES — 01/11/2026
+
+Estado implementado y verificado:
+- Entidades ampliadas con estructura completa: `id`, `type`, `name`, `x`, `y`, `z`, `yaw`, `hp`, `hp_max`, `estado` y `activo`.
+- Funciones del servidor: `_registrar_entidad()`, `_actualizar_entidad()`, `_obtener_entidad()`, `_eliminar_entidad()`.
+- Mensaje `entity_updated` implementado y difundido en red.
+- Cliente (`Multijugador.gd`): separación entre datos de red (`datos_entidades`), objetivos espaciales (`objetivos_entidades`) y nodos visuales (`entidades_remotas`).
+- Interpolación suave de posición y rotación (`_actualizar_entidades_remotas`).
+- Creada suite de prueba `herramientas/PruebaEstadoEntidades.gd` (código 0).
+
+Comprobado:
+- 10 scripts con `--check-only` en 0.
+- `herramientas/PruebaFabricaEntidades.gd` en 0.
+- `herramientas/PruebaNPCServidor.gd` en 0.
+- `herramientas/PruebaEstadoEntidades.gd` en 0.
+- Escena principal `Mapa1/Escena1.tscn` en headless en 0.
+
+Siguiente tarea:
+1. Diseñar tipos adicionales de entidades en `FabricaEntidades.gd` (criaturas / enemigos iniciales).
+2. Probar con dos clientes y movimiento simultáneo.
+3. Avanzar hacia comportamiento básico / IA de patrulla para entidades.
+
+No declarar terminada la Fase 5.
+
+## HITO FASE 5 — CRIATURA LOBO Y PATRULLA BÁSICA AUTORITATIVA — 01/11/2026
+
+Estado implementado y verificado:
+- Tipo "lobo" añadido a FabricaEntidades.gd (cuerpo, cabeza, 4 patas y etiqueta de nombre destacada).
+- Entidad 3 registrada en el servidor: "Lobo del Bosque", 60/60 HP, estado "patrullando".
+- Patrulla autoritativa periódica implementada en Servidor.gd con cálculo de orientación y relieve del terreno.
+- Multijugador.gd interpola posición y giro del lobo suavemente.
+
+Comprobado:
+- 10 scripts con --check-only: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- Escena principal Mapa1/Escena1.tscn en headless: código 0.
+
+Siguiente tarea:
+1. Diseñar el sistema de selección de objetivos (targeting) con raycast/clic o tecla Tab para seleccionar entidades (jugadores, NPC, criaturas).
+2. Probar con dos clientes y movimiento simultáneo.
+
+No declarar terminada la Fase 5.
+
+## HITO FASE 5 — TARGETING Y MARCO DE OBJETIVO — 01/11/2026
+
+Estado implementado y verificado:
+- Tecla Tab (select_next_target): fija el objetivo más próximo y cicla secuencialmente entre entidades del mundo.
+- Tecla Escape: limpia el objetivo.
+- Target Frame en el HUD (Main.gd): muestra nombre, barra de vida actual/máxima y tipo/estado de la entidad seleccionada.
+- Indicador 3D circular dorado (TorusMesh con brillo): se posiciona en el suelo bajo el objetivo y sigue su movimiento.
+- Sincronización en red: si el objetivo recibe entity_updated en Multijugador.gd, el marco actualiza la vida en tiempo real.
+- Nueva suite de prueba herramientas/PruebaTargeting.gd (código 0).
+
+Comprobado:
+- 11 scripts con --check-only: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- herramientas/PruebaTargeting.gd: código 0.
+- Escena principal Mapa1/Escena1.tscn en headless: código 0.
+
+Siguiente tarea:
+1. Avanzar hacia la Fase 6 (Combate): acción de ataque básico contra el objetivo seleccionado (solicitud al servidor, validación de rango y aplicación de daño a la entidad).
+2. O bien prueba de dos clientes simultáneos.
