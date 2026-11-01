@@ -4,8 +4,13 @@
 
 # Copias de seguridad locales: no publicar en GitHub
 **/*RESPALDO*
+*.bak
+*.bak_*
 
-# Archivos auxiliares vacíos o antiguos, sin referencias
+# Copias automaticas de Blender
+*.blend1
+
+# Archivos auxiliares vacios o antiguos, sin referencias
 /scripts/cliente/Jugador.gd
 /scripts/cliente/Jugador.gd.uid
 /scripts/servidor/Servidor.gd.txt

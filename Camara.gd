@@ -76,5 +76,3 @@ func _actualizar_modo_raton() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
-	print("RATON: ", Input.mouse_mode, " | DERECHO: ", _orbiting, " | IZQUIERDO: ", _freeorbiting)

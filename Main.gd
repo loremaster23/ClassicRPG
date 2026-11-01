@@ -1,30 +1,26 @@
+
 extends Node3D
 ## Mapa prototipo del ClassicRPG, estilo low-poly.
-## Terreno con relieve, montanas al borde, camino de tierra, bosque, rocas, cielo y camara en perspectiva.
 
-const TAMANO_MUNDO := 110.0
-const RESOLUCION := 44
-const NUM_ARBOLES := 80
-const NUM_ROCAS := 24
+const GeneradorTerreno := preload("res://scripts/compartido/GeneradorTerreno.gd")
+
+const TAMANO_MUNDO := GeneradorTerreno.TAMANO_MUNDO
+const RESOLUCION := GeneradorTerreno.RESOLUCION
+const NUM_ARBOLES := GeneradorTerreno.NUM_ARBOLES
+const NUM_ROCAS := GeneradorTerreno.NUM_ROCAS
 
 const EscenaJugador := preload("res://Personajes/Jugador.tscn")
 const EscenaCamara := preload("res://Camaras/Camara.tscn")
-
 const ScriptMultijugador := preload("res://scripts/cliente/Multijugador.gd")
+
 var ruido: FastNoiseLite
 var ruido_detalle: FastNoiseLite
 var material_terreno: StandardMaterial3D
 
-func _ready() -> void:
-	ruido = FastNoiseLite.new()
-	ruido.seed = 20261030
-	ruido.frequency = 0.022
-	ruido.fractal_octaves = 3
 
-	ruido_detalle = FastNoiseLite.new()
-	ruido_detalle.seed = 777
-	ruido_detalle.frequency = 0.06
-	ruido_detalle.fractal_octaves = 2
+func _ready() -> void:
+	ruido = GeneradorTerreno.crear_ruido_terreno()
+	ruido_detalle = GeneradorTerreno.crear_ruido_detalle()
 
 	material_terreno = StandardMaterial3D.new()
 	material_terreno.vertex_color_use_as_albedo = true
@@ -42,8 +38,10 @@ func _ready() -> void:
 
 	print("MAPA: listo, hijos = ", get_child_count())
 
+
 func _c(r: float, g: float, b: float) -> Color:
 	return Color(r, g, b).srgb_to_linear()
+
 
 func _crear_entorno() -> void:
 	var cielo := Sky.new()
@@ -73,6 +71,7 @@ func _crear_entorno() -> void:
 	mundo.environment = ambiente
 	add_child(mundo)
 
+
 func _crear_luz() -> void:
 	var sol := DirectionalLight3D.new()
 	sol.light_color = _c(1.0, 0.94, 0.80)
@@ -87,11 +86,11 @@ func _crear_luz() -> void:
 	sol.directional_shadow_max_distance = 120.0
 	add_child(sol)
 
+
 func _crear_jugador() -> void:
-	var z := 10.0
-	var x := sin(z * 0.11) * 3.0
+	var posicion_aparicion := GeneradorTerreno.posicion_aparicion(0, ruido, ruido_detalle)
 	var jugador = EscenaJugador.instantiate()
-	jugador.position = Vector3(x, _altura(x, z) + 0.6, z)
+	jugador.position = posicion_aparicion
 	add_child(jugador)
 
 	var camara = EscenaCamara.instantiate()
@@ -99,9 +98,12 @@ func _crear_jugador() -> void:
 	add_child(camara)
 	camara.objetivo = jugador
 	jugador.camara = camara
+
 	var multijugador = ScriptMultijugador.new()
 	add_child(multijugador)
 	multijugador.iniciar(jugador)
+
+
 func _crear_hud() -> void:
 	var capa := CanvasLayer.new()
 	add_child(capa)
@@ -120,19 +122,10 @@ func _crear_hud() -> void:
 	tween.tween_interval(9.0)
 	tween.tween_property(etiqueta, "modulate:a", 0.0, 2.5)
 
+
 func _altura(x: float, z: float) -> float:
-	var dist := Vector2(x, z).length() / (TAMANO_MUNDO * 0.5)
-	var factor := smoothstep(0.22, 0.92, dist)
-	var n := ruido.get_noise_2d(x, z) * 0.5 + 0.5
-	var detalle := ruido_detalle.get_noise_2d(x * 2.5, z * 2.5) * 0.5 + 0.5
-	var h := (n * 7.0 + detalle * 1.6) * factor
-	# Muralla de montanas en el borde del mapa
-	var borde := smoothstep(0.78, 1.0, dist)
-	h += borde * (8.0 + n * 10.0)
-	# Valle plano alrededor del camino
-	var curva := sin(z * 0.11) * 3.0
-	h *= smoothstep(3.0, 10.0, abs(x - curva))
-	return h
+	return GeneradorTerreno.altura(x, z, ruido, ruido_detalle)
+
 
 func _color_terreno(altura: float) -> Color:
 	if altura < 0.35:
@@ -144,21 +137,25 @@ func _color_terreno(altura: float) -> Color:
 	else:
 		return _c(0.52, 0.50, 0.46)
 
+
 func _triangulo(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	var altura_media := (a.y + b.y + c.y) / 3.0
 	var color := _color_terreno(altura_media)
 	var variacion := randf_range(-0.05, 0.05)
+
 	color = Color(
 		clampf(color.r + variacion, 0.0, 1.0),
 		clampf(color.g + variacion, 0.0, 1.0),
 		clampf(color.b + variacion, 0.0, 1.0)
 	)
+
 	st.set_color(color)
 	st.add_vertex(a)
 	st.set_color(color)
 	st.add_vertex(b)
 	st.set_color(color)
 	st.add_vertex(c)
+
 
 func _crear_terreno() -> void:
 	var st := SurfaceTool.new()
@@ -184,6 +181,7 @@ func _crear_terreno() -> void:
 
 	st.generate_normals()
 	var malla := st.commit()
+
 	var nodo := MeshInstance3D.new()
 	nodo.mesh = malla
 	nodo.material_override = material_terreno
@@ -195,9 +193,11 @@ func _crear_terreno() -> void:
 	cuerpo.add_child(forma)
 	add_child(cuerpo)
 
+
 func _crear_camino() -> void:
 	var puntos: Array[Vector3] = []
 	var z := -TAMANO_MUNDO * 0.5 + 6.0
+
 	while z <= TAMANO_MUNDO * 0.5 - 6.0:
 		var x := sin(z * 0.11) * 3.0
 		puntos.append(Vector3(x, _altura(x, z) + 0.12, z))
@@ -213,6 +213,7 @@ func _crear_camino() -> void:
 		var dir := p1 - p0
 		dir.y = 0.0
 		dir = dir.normalized()
+
 		var perp := Vector3(dir.z, 0.0, -dir.x) * ancho
 		var a := p0 - perp
 		var b := p0 + perp
@@ -221,6 +222,7 @@ func _crear_camino() -> void:
 
 		var color := _c(0.55, 0.40, 0.24)
 		var variacion := randf_range(-0.03, 0.03)
+
 		color = Color(
 			clampf(color.r + variacion, 0.0, 1.0),
 			clampf(color.g + variacion, 0.0, 1.0),
@@ -242,10 +244,12 @@ func _crear_camino() -> void:
 		st.add_vertex(d)
 
 	st.generate_normals()
+
 	var nodo := MeshInstance3D.new()
 	nodo.mesh = st.commit()
 	nodo.material_override = material_terreno
 	add_child(nodo)
+
 
 func _material(color: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
@@ -254,11 +258,12 @@ func _material(color: Color) -> StandardMaterial3D:
 	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return mat
 
-func _spawn_arbol(pos: Vector3, escala: float) -> void:
+
+func _spawn_arbol(pos: Vector3, escala: float, rotacion: float) -> void:
 	var arbol := Node3D.new()
 	arbol.position = pos
 	arbol.scale = Vector3.ONE * escala
-	arbol.rotation.y = randf() * TAU
+	arbol.rotation.y = rotacion
 	add_child(arbol)
 
 	var tronco := MeshInstance3D.new()
@@ -275,6 +280,7 @@ func _spawn_arbol(pos: Vector3, escala: float) -> void:
 
 	var verde := _c(0.24, 0.62, 0.24)
 	var altura := 1.9
+
 	for i in range(3):
 		var cono := MeshInstance3D.new()
 		var malla_cono := CylinderMesh.new()
@@ -299,31 +305,27 @@ func _spawn_arbol(pos: Vector3, escala: float) -> void:
 	cuerpo.add_child(forma)
 	add_child(cuerpo)
 
+
 func _crear_bosque() -> void:
-	var colocados := 0
-	var intentos := 0
-	while colocados < NUM_ARBOLES and intentos < NUM_ARBOLES * 20:
-		intentos += 1
-		var angulo := randf() * TAU
-		var radio := sqrt(randf()) * (TAMANO_MUNDO * 0.46)
-		var x := cos(angulo) * radio
-		var z := sin(angulo) * radio
-		var curva := sin(z * 0.11) * 3.0
-		if abs(x - curva) < 6.0:
-			continue
-		if Vector2(x, z).length() < 10.0:
-			continue
-		_spawn_arbol(Vector3(x, _altura(x, z), z), randf_range(0.85, 1.45))
-		colocados += 1
+	var arboles := GeneradorTerreno.generar_arboles()
+
+	for datos in arboles:
+		var pos: Vector3 = datos["posicion"]
+		pos.y = _altura(pos.x, pos.z)
+
+		_spawn_arbol(
+			pos,
+			datos["escala"],
+			datos["rotacion"]
+		)
+
 
 func _crear_rocas() -> void:
-	for i in range(NUM_ROCAS):
-		var angulo := randf() * TAU
-		var radio := randf_range(12.0, TAMANO_MUNDO * 0.46)
-		var x := cos(angulo) * radio
-		var z := sin(angulo) * radio
-		if abs(x - sin(z * 0.11) * 3.0) < 5.0:
-			continue
+	var rocas := GeneradorTerreno.generar_rocas()
+
+	for datos in rocas:
+		var pos: Vector3 = datos["posicion"]
+		pos.y = _altura(pos.x, pos.z) + 0.25
 
 		var roca := MeshInstance3D.new()
 		var malla := SphereMesh.new()
@@ -331,9 +333,10 @@ func _crear_rocas() -> void:
 		malla.height = 2.0
 		malla.radial_segments = 5
 		malla.rings = 3
+
 		roca.mesh = malla
-		roca.position = Vector3(x, _altura(x, z) + 0.25, z)
-		roca.scale = Vector3(randf_range(0.6, 1.7), randf_range(0.5, 1.1), randf_range(0.6, 1.7))
-		roca.rotation = Vector3(0.0, randf() * TAU, randf_range(-0.15, 0.15))
+		roca.position = pos
+		roca.scale = datos["escala"]
+		roca.rotation = datos["rotacion"]
 		roca.material_override = _material(_c(0.52, 0.52, 0.49))
 		add_child(roca)
