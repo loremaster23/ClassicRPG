@@ -352,3 +352,39 @@ Pendientes:
 - Selección alternativa por clic directo del ratón sobre la entidad.
 - Prueba con dos clientes y movimiento simultáneo.
 - Puente hacia combate (Fase 6): ataque básico o habilidad al objetivo fijado.
+
+## 2026-11-02 — Sistema de combate autoritativo cuerpo a cuerpo (Fase 6)
+
+Objetivo:
+Implementar el núcleo del combate en red: ataque melee con validación autoritativa en el servidor (alcance, recarga/cooldown, objetivos vivos), aplicación de daño, reducción de vida sincronizada y feedback visual en HUD del cliente.
+
+Trabajo realizado:
+- scripts/servidor/Servidor.gd:
+  - Constantes de combate: RANGO_ATAQUE_MELEE (4.5), TIEMPO_RECARGA_ATAQUE (1.2s), DANIO_BASE_MELEE (15).
+  - Variable de seguimiento tiempos_ultimo_ataque por peer.
+  - Función _procesar_ataque(): validación de jugador emisor, objetivo activo, distancia física en 3D, tiempo de reutilización, reducción de HP con maxi(0, hp - daño), actualización de estado a 'muerto' y 'activo: false' al llegar a 0 HP, y difusión en red con entity_updated.
+  - IA del lobo detenida si la entidad está muerta o inactiva.
+- scripts/cliente/Multijugador.gd:
+  - Señal resultado_ataque declarada y emitida al recibir paquete attack_result del servidor.
+  - Captura de input ability_1 (tecla 1) para disparar atacar_objetivo().
+  - Función atacar_objetivo() que despacha el paquete JSON con target_id.
+- Main.gd:
+  - Conexión con resultado_ataque para mostrar feedback dinámico en HUD (etiqueta_combate con tween).
+  - Avisos descriptivos de daño, muerte del objetivo y razones de fallo (fuera de alcance, en recarga, objetivo muerto).
+  - Texto de ayuda en pantalla actualizado con tecla 1: atacar.
+- herramientas/PruebaCombate.gd:
+  - Creada suite de prueba unitaria que verifica validación de objetivo inválido, fuera de rango, daño e impacto a la vida, cooldown de ataque, muerte de entidad y rechazo de ataque sobre cadáver.
+
+Resultado comprobado:
+- herramientas/PruebaCombate.gd: código 0.
+- herramientas/PruebaTargeting.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- 12 scripts con --check-only: código 0.
+- Escena principal Mapa1/Escena1.tscn en headless: código 0.
+
+Pendientes:
+- Animación procedural de ataque con espada en Jugador.gd.
+- Reaparición (respawn) de criaturas tras morir.
+- Prueba con dos clientes y combate simultáneo.

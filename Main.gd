@@ -24,6 +24,8 @@ var etiqueta_objetivo_info: Label
 var barra_vida_objetivo: ProgressBar
 var indicador_objetivo_3d: MeshInstance3D
 var nodo_objetivo_actual: Node3D = null
+var etiqueta_combate: Label
+var tween_combate: Tween
 
 
 func _ready() -> void:
@@ -111,6 +113,7 @@ func _crear_jugador() -> void:
 	add_child(nodo_multijugador)
 	nodo_multijugador.iniciar(jugador)
 	nodo_multijugador.objetivo_cambiado.connect(_al_cambiar_objetivo)
+	nodo_multijugador.resultado_ataque.connect(_al_resultado_ataque)
 
 
 func _crear_hud() -> void:
@@ -118,7 +121,7 @@ func _crear_hud() -> void:
 	add_child(capa)
 
 	var etiqueta := Label.new()
-	etiqueta.text = "WASD: mover   ·   Espacio: saltar   ·   Shift: correr   ·   Tab: objetivo\nClic derecho + mouse: rotar cámara   ·   Rueda: zoom   ·   Escape: limpiar objetivo"
+	etiqueta.text = "WASD: mover   ·   Espacio: saltar   ·   Shift: correr   ·   Tab: objetivo   ·   1: atacar\nClic derecho + mouse: rotar cámara   ·   Rueda: zoom   ·   Escape: limpiar objetivo"
 	etiqueta.position = Vector2(24, 20)
 	etiqueta.add_theme_font_size_override("font_size", 17)
 	etiqueta.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
@@ -177,6 +180,15 @@ func _crear_hud() -> void:
 
 	capa.add_child(panel_objetivo)
 
+	etiqueta_combate = Label.new()
+	etiqueta_combate.position = Vector2(24, 155)
+	etiqueta_combate.add_theme_font_size_override("font_size", 14)
+	etiqueta_combate.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	etiqueta_combate.add_theme_constant_override("shadow_offset_x", 1)
+	etiqueta_combate.add_theme_constant_override("shadow_offset_y", 1)
+	etiqueta_combate.text = ""
+	capa.add_child(etiqueta_combate)
+
 	# Indicador 3D circular en el suelo
 	indicador_objetivo_3d = MeshInstance3D.new()
 	var aro := TorusMesh.new()
@@ -224,6 +236,45 @@ func _al_cambiar_objetivo(id: int, datos: Dictionary, nodo: Node3D) -> void:
 	var tipo: String = str(datos.get("type", "entidad"))
 	var estado: String = str(datos.get("estado", "activo"))
 	etiqueta_objetivo_info.text = "%s · %s (%d / %d)" % [tipo.capitalize(), estado.capitalize(), hp, hp_max]
+
+
+func _al_resultado_ataque(datos: Dictionary) -> void:
+	if etiqueta_combate == null:
+		return
+
+	if is_instance_valid(tween_combate):
+		tween_combate.kill()
+
+	etiqueta_combate.modulate.a = 1.0
+
+	if bool(datos.get("success", false)):
+		var danio := int(datos.get("damage", 0))
+		var hp_restante := int(datos.get("target_hp", 0))
+		var estado := str(datos.get("target_state", ""))
+		if estado == "muerto":
+			etiqueta_combate.text = "¡Golpe de %d de daño! ¡Objetivo derrotado!" % danio
+			etiqueta_combate.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		else:
+			etiqueta_combate.text = "¡Golpe de %d de daño! (Vida restante: %d)" % [danio, hp_restante]
+			etiqueta_combate.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	else:
+		var motivo := str(datos.get("reason", "error"))
+		var mensaje_error := "No puedes atacar."
+		match motivo:
+			"out_of_range":
+				mensaje_error = "¡Objetivo fuera de alcance!"
+			"on_cooldown":
+				mensaje_error = "Ataque en tiempo de recarga..."
+			"target_dead":
+				mensaje_error = "El objetivo ya está muerto."
+			"invalid_target":
+				mensaje_error = "Objetivo no válido."
+		etiqueta_combate.text = mensaje_error
+		etiqueta_combate.add_theme_color_override("font_color", Color(0.9, 0.45, 0.45))
+
+	tween_combate = create_tween()
+	tween_combate.tween_interval(1.8)
+	tween_combate.tween_property(etiqueta_combate, "modulate:a", 0.0, 0.7)
 
 
 func _process(_delta: float) -> void:

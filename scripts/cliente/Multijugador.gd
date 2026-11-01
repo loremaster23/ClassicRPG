@@ -35,6 +35,7 @@ var mundo_validado := false
 var configuracion_mundo: Dictionary = {}
 
 signal objetivo_cambiado(id: int, datos: Dictionary, nodo: Node3D)
+signal resultado_ataque(datos: Dictionary)
 
 var id_objetivo := 0
 var nodo_objetivo: Node3D = null
@@ -160,6 +161,9 @@ func _procesar_mensaje(datos: Dictionary) -> void:
 
 		"entity_removed":
 			_eliminar_entidad_remota(int(datos.get("id", 0)))
+
+		"attack_result":
+			emit_signal("resultado_ataque", datos)
 
 		"player_left":
 			var id := int(datos.get("id", 0))
@@ -360,9 +364,22 @@ func _crear_entidad_remota(datos: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("select_next_target"):
 		seleccionar_siguiente_objetivo()
+	elif event.is_action_pressed("ability_1"):
+		atacar_objetivo()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if id_objetivo != 0:
 			seleccionar_objetivo(0)
+
+
+func atacar_objetivo() -> void:
+	if id_objetivo <= 0 or not conectado:
+		return
+
+	var mensaje := {
+		"type": "attack",
+		"target_id": id_objetivo
+	}
+	cliente.send_text(JSON.stringify(mensaje))
 
 
 func seleccionar_siguiente_objetivo() -> void:

@@ -218,3 +218,19 @@ La Fase 5 no esta completada. La prueba actual utiliza esferas de demostracion, 
 - [ ] Publicar los cambios en GitHub.
 - [ ] Probar dos clientes con movimiento simultaneo.
 - [ ] Continuar la Fase 5 con el ciclo de vida de entidades.
+
+## Tareas Fase 6 — Combate y Progresión (02/11/2026)
+
+- [x] Acción de ataque cuerpo a cuerpo autoritativo (ttack).
+- [x] Validación de rango melee (distancia euclídea <= 4.5m).
+- [x] Validación de tiempo de recarga / cooldown entre ataques (1.2s).
+- [x] Aplicación de daño autoritativo y reducción de HP sincronizada (entity_updated).
+- [x] Transición a estado muerto e inactivo (ctivo = false) al llegar a 0 HP.
+- [x] Interrupción de IA de patrulla al morir la criatura.
+- [x] Rechazo autoritativo de ataques a objetivos muertos o inválidos.
+- [x] Mapeo de tecla 1 (bility_1) para atacar al objetivo actual.
+- [x] Feedback dinámico de combate en HUD (daño, vida, errores de rango y cooldown).
+- [x] Suite de prueba unitaria herramientas/PruebaCombate.gd.
+- [ ] Animación procedural de ataque con espada en Jugador.gd.
+- [ ] Reaparición (respawn) de criaturas tras morir tras un retardo en el servidor.
+- [ ] Probar combate y movimiento con dos clientes simultáneos.

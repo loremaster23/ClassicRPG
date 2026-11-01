@@ -24,6 +24,10 @@ const TIEMPO_MAXIMO_ACUMULABLE := 0.5
 const TOLERANCIA_VELOCIDAD_ASCENSO := 0.35
 const TOLERANCIA_VELOCIDAD_DESCENSO := 0.5
 
+const RANGO_ATAQUE_MELEE := 4.5
+const TIEMPO_RECARGA_ATAQUE := 1.2
+const DANIO_BASE_MELEE := 15
+
 const GeneradorTerreno := preload("res://scripts/compartido/GeneradorTerreno.gd")
 
 var servidor := WebSocketMultiplayerPeer.new()
@@ -39,6 +43,8 @@ var arboles: Array[Dictionary] = []
 var rocas: Array[Dictionary] = []
 var tiempo_ia_entidades := 0.0
 var paso_patrulla_lobo := 0
+signal ataque_procesado(id_jugador: int, resultado: Dictionary)
+var tiempos_ultimo_ataque: Dictionary = {}
 
 
 func _ready() -> void:
@@ -203,6 +209,9 @@ func _actualizar_ia_entidades(delta: float) -> void:
 	if not entidades.has(3) or jugadores.is_empty():
 		return
 
+	if not bool(entidades[3].get("activo", true)) or String(entidades[3].get("estado", "")) == "muerto":
+		return
+
 	tiempo_ia_entidades += delta
 	if tiempo_ia_entidades < 3.0:
 		return
@@ -258,8 +267,100 @@ func _process(delta: float) -> void:
 		if typeof(datos) != TYPE_DICTIONARY:
 			continue
 
-		if datos.get("type", "") == "move":
+		var tipo_mensaje: String = datos.get("type", "")
+		if tipo_mensaje == "move":
 			_procesar_movimiento(id, datos)
+		elif tipo_mensaje == "attack":
+			_procesar_ataque(id, datos)
+
+
+func _procesar_ataque(id: int, datos: Dictionary) -> void:
+	if not jugadores.has(id):
+		return
+
+	var target_id := int(datos.get("target_id", 0))
+	if target_id <= 0 or not entidades.has(target_id):
+		var res_invalid := {
+			"type": "attack_result",
+			"success": false,
+			"reason": "invalid_target",
+			"target_id": target_id
+		}
+		emit_signal("ataque_procesado", id, res_invalid)
+		_enviar(id, res_invalid)
+		return
+
+	var entidad: Dictionary = entidades[target_id]
+	if not bool(entidad.get("activo", true)) or String(entidad.get("estado", "")) == "muerto":
+		var res_dead := {
+			"type": "attack_result",
+			"success": false,
+			"reason": "target_dead",
+			"target_id": target_id
+		}
+		emit_signal("ataque_procesado", id, res_dead)
+		_enviar(id, res_dead)
+		return
+
+	var tiempo_actual := Time.get_ticks_msec() / 1000.0
+	var ultimo_ataque: float = float(tiempos_ultimo_ataque.get(id, -100.0))
+	if (tiempo_actual - ultimo_ataque) < TIEMPO_RECARGA_ATAQUE:
+		var res_cd := {
+			"type": "attack_result",
+			"success": false,
+			"reason": "on_cooldown",
+			"target_id": target_id,
+			"cooldown_restante": TIEMPO_RECARGA_ATAQUE - (tiempo_actual - ultimo_ataque)
+		}
+		emit_signal("ataque_procesado", id, res_cd)
+		_enviar(id, res_cd)
+		return
+
+	var jug: Dictionary = jugadores[id]
+	var pos_jugador := Vector3(float(jug["x"]), float(jug["y"]), float(jug["z"]))
+	var pos_entidad := Vector3(float(entidad["x"]), float(entidad["y"]), float(entidad["z"]))
+	var distancia := pos_jugador.distance_to(pos_entidad)
+
+	if distancia > RANGO_ATAQUE_MELEE:
+		var res_range := {
+			"type": "attack_result",
+			"success": false,
+			"reason": "out_of_range",
+			"target_id": target_id,
+			"distancia": distancia,
+			"rango_max": RANGO_ATAQUE_MELEE
+		}
+		emit_signal("ataque_procesado", id, res_range)
+		_enviar(id, res_range)
+		return
+
+	tiempos_ultimo_ataque[id] = tiempo_actual
+
+	var hp_actual := int(entidad.get("hp", 100))
+	var nueva_hp := maxi(0, hp_actual - DANIO_BASE_MELEE)
+	var nuevo_estado := String(entidad.get("estado", "activo"))
+	var nuevo_activo := true
+
+	if nueva_hp <= 0:
+		nuevo_estado = "muerto"
+		nuevo_activo = false
+
+	_actualizar_entidad(target_id, {
+		"hp": nueva_hp,
+		"estado": nuevo_estado,
+		"activo": nuevo_activo
+	})
+
+	var res_success := {
+		"type": "attack_result",
+		"success": true,
+		"target_id": target_id,
+		"damage": DANIO_BASE_MELEE,
+		"target_hp": nueva_hp,
+		"target_state": nuevo_estado
+	}
+	emit_signal("ataque_procesado", id, res_success)
+	_enviar(id, res_success)
 
 
 func _al_conectar(id: int) -> void:
@@ -506,9 +607,12 @@ func _al_desconectar(id: int) -> void:
 		print("Jugador desconectado: ", id, " | ", jugadores.size(), "/", MAX_JUGADORES)
 
 	rechazos_pendientes.erase(id)
+	tiempos_ultimo_ataque.erase(id)
 
 
 func _enviar(id: int, datos: Dictionary) -> void:
+	if servidor.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return
 	servidor.set_target_peer(id)
 
 	var error := servidor.put_packet(
@@ -522,6 +626,8 @@ func _enviar(id: int, datos: Dictionary) -> void:
 
 
 func _enviar_texto(id: int, mensaje: String) -> void:
+	if servidor.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return
 	servidor.set_target_peer(id)
 
 	var error := servidor.put_packet(mensaje.to_utf8_buffer())

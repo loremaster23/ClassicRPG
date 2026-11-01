@@ -427,3 +427,27 @@ Comprobado:
 Siguiente tarea:
 1. Avanzar hacia la Fase 6 (Combate): acción de ataque básico contra el objetivo seleccionado (solicitud al servidor, validación de rango y aplicación de daño a la entidad).
 2. O bien prueba de dos clientes simultáneos.
+
+## HITO FASE 6 — SISTEMA DE COMBATE AUTORITATIVO CUERPO A CUERPO — 02/11/2026
+
+Estado implementado y verificado:
+- Tecla 1 (ability_1): ejecuta ataque cuerpo a cuerpo sobre la entidad seleccionada.
+- Servidor autoritativo: valida existencia del objetivo, distancia euclídea (rango <= 4.5m), recarga/cooldown (1.2s), reduce HP (15 de daño) y marca 'muerto' / activo=false al llegar a 0 de vida.
+- La patrulla del lobo se interrumpe si la criatura muere.
+- Mensaje de red entity_updated difunde la vida actualizada a todos los clientes.
+- HUD (Main.gd): aviso visual dinámico con daño infligido, vida restante y advertencias ("¡Objetivo fuera de alcance!", "Ataque en tiempo de recarga...", "El objetivo ya está muerto").
+- Nueva suite de prueba herramientas/PruebaCombate.gd (código 0).
+
+Comprobado:
+- 12 scripts con --check-only: código 0.
+- herramientas/PruebaCombate.gd: código 0.
+- herramientas/PruebaTargeting.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- Escena principal Mapa1/Escena1.tscn en headless: código 0.
+
+Siguiente tarea:
+1. Animación procedural de ataque con espada en Jugador.gd al pulsar habilidad 1.
+2. Respawn autoritativo de criaturas en Servidor.gd tras morir.
+3. Probar con dos clientes y movimiento/combate simultáneo.

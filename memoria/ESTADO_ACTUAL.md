@@ -501,3 +501,40 @@ Comprobado:
 
 No probado:
 - Partida de dos clientes con movimiento simultáneo.
+
+## 20. HITO FASE 6 — SISTEMA DE COMBATE AUTORITATIVO CUERPO A CUERPO — 02/11/2026
+
+Cambios aplicados:
+- Servidor.gd:
+  - Constantes añadidas: RANGO_ATAQUE_MELEE (4.5 unidades), TIEMPO_RECARGA_ATAQUE (1.2 segundos), DANIO_BASE_MELEE (15 puntos de daño).
+  - Variable añadida: tiempos_ultimo_ataque (Dictionary para cooldown por jugador).
+  - Señal añadida: ataque_procesado(id_jugador, resultado).
+  - En _process: despacho de mensajes "attack" hacia _procesar_ataque().
+  - Función _procesar_ataque(id, datos): validación autoritativa completa de jugador existente, objetivo válido y activo, cooldown de ataque, rango de distancia euclídea (pos_jugador a pos_entidad <= 4.5m). Reducción de HP, actualización de estado a "muerto" y activo=false si vida <= 0, y difusión en red con entity_updated. Respuesta al atacante con paquete attack_result (éxito/daño/vida restante/estado o motivo de rechazo: out_of_range, on_cooldown, target_dead, invalid_target).
+  - Protección de socket desconectado en _enviar() y _enviar_texto() para estabilidad en pruebas y desconexiones.
+  - IA del lobo (_actualizar_ia_entidades): validación de que el lobo esté activo y no muerto antes de mover su patrulla.
+- Multijugador.gd:
+  - Añadida señal resultado_ataque(datos).
+  - Manejo de mensaje de red "attack_result" emitiendo resultado_ataque.
+  - En _unhandled_input(): mapeo de la acción ability_1 (tecla 1) para llamar a atacar_objetivo().
+  - Función atacar_objetivo(): envía paquete JSON {"type": "attack", "target_id": id_objetivo} si hay objetivo fijado y conexión activa.
+- Main.gd:
+  - Añadido indicador de combate en pantalla (etiqueta_combate) con tween de desvanecimiento dinámico.
+  - Conexión de señal resultado_ataque hacia _al_resultado_ataque().
+  - Feedback visual: texto con daño infligido y vida restante del objetivo, mensaje especial al derrotar al objetivo, y avisos de error claros ("¡Objetivo fuera de alcance!", "Ataque en tiempo de recarga...", "El objetivo ya está muerto").
+  - Controles de HUD actualizados: "1: atacar".
+- herramientas/PruebaCombate.gd:
+  - Nueva suite de prueba unitaria que verifica: objetivo inválido, ataque fuera de rango (out_of_range), ataque exitoso melee con daño y vida correcta, cooldown inmediato (on_cooldown), golpe letal y transición a estado muerto con activo=false, y rechazo de ataque sobre cadáver (target_dead).
+
+Comprobado:
+- herramientas/PruebaCombate.gd: código 0 (todas las aserciones exitosas).
+- herramientas/PruebaTargeting.gd: código 0.
+- herramientas/PruebaEstadoEntidades.gd: código 0.
+- herramientas/PruebaNPCServidor.gd: código 0.
+- herramientas/PruebaFabricaEntidades.gd: código 0.
+- Los 12 scripts del proyecto pasan --check-only con código 0.
+- Escena principal Mapa1/Escena1.tscn en headless arranca sin errores (código 0).
+
+No probado:
+- Partida con dos clientes y combate simultáneo.
+- Animación procedural de ataque con espada en Jugador.gd.
