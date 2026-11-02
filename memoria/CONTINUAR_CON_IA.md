@@ -876,3 +876,9 @@ Recursos conservados en `assets/modelos/quaternius/universal_animation_library_s
 ## Limpieza previa a publicación — 02/11/2026
 
 Se eliminaron respaldos locales antiguos `.bak`/`RESPALDO` sin referencias, cursores de guantelete no configurados y la escena vacía inicial `node_3d.tscn`. Permanecen el respaldo visual antiguo dentro de `Personajes/Jugador.tscn` y los recursos fuente originales de Quaternius. El código de juego no se tocó durante la limpieza; la comprobación anterior fue 12/12 headless. La rama local `main` tenía dos commits adelantados sobre `origin/main` y no había cambios remotos entrantes al último fetch. El siguiente agente debe revisar `git status` antes de cualquier otra publicación y mantener todos los cambios existentes.
+
+## Organización del repositorio y README — 02/11/2026
+
+Se creó `README.md` en la raíz para uso público: ejecutar el menú, controles, estructura, pruebas y licencias. `assets/modelos/caballero/README_ARCHIVO.md` identifica las variantes antiguas como archivo histórico no referenciado por escenas activas; se preservan. `memoria/PENDIENTES.md` ahora presenta el modelo Caballero como archivado y la locomoción UAL como implementación ya verificada. `memoria/LEEME_PRIMERO.md` separa guía pública y protocolo interno.
+
+No se movieron scripts/escenas, no se eliminaron recursos de modelos y no cambiaron rutas Godot. La batería `herramientas/Prueba*.gd` pasó 12/12 con Godot 4.7.2 después de documentar. No abrir GUI en esta revisión organizativa; el usuario mantiene la valoración visual.

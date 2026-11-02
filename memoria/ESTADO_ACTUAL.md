@@ -974,3 +974,11 @@ Estado técnico consolidado:
 - Se retiraron los cursores alternativos `guantelete_32/64` y sus sidecars; el único cursor configurado es `assets/cursores/Point.png`.
 - Se eliminó `node_3d.tscn`, una escena vacía de la plantilla inicial sin referencias ni uso como escena principal. Se conserva el modelo provisional oculto en `Personajes/Jugador.tscn` y se conservan los paquetes fuente originales de Quaternius.
 - No se modificaron scripts de juego durante la limpieza. La última batería previa a esta limpieza había terminado 12/12 con código 0; la limpieza retiró solo recursos sin referencias y respaldos locales. No se hizo `reset` ni `clean`.
+
+## 35. ORGANIZACIÓN Y DOCUMENTACIÓN PÚBLICA — 02/11/2026
+
+- Se añadió `README.md` en la raíz con instalación/ejecución, controles, escena de entrada, pruebas, estructura y recursos/licencias. Se aclara que el juego inicia en `MenuInicio.tscn` y que el menú carga `Mapa1/Escena1.tscn`.
+- Se añadió `assets/modelos/caballero/README_ARCHIVO.md`: las versiones Caballero son material histórico sin referencias activas; se mantienen intactas como respaldo. `Main.tscn` también se documenta como prototipo conservado, no como escena de entrada.
+- Se reorganizó la lectura inicial de `memoria/PENDIENTES.md`: las tareas del Caballero pasan a estado archivado; Skeleton/retarget y locomoción UAL constan como completados técnicamente; queda la revisión visual del usuario y la animación de combate/equipamiento.
+- `memoria/LEEME_PRIMERO.md` distingue la guía pública del protocolo interno. No se movieron escenas ni scripts y no se alteraron rutas `res://`.
+- La batería existente de 12 pruebas `Prueba*.gd` pasó con Godot 4.7.2 tras los cambios documentales. No se abrió GUI ni se hizo evaluación visual.

@@ -105,3 +105,20 @@ Consecuencias:
 
 Archivos afectados:
 Jugador.gd, Personajes/Jugador.tscn, herramientas/PruebaModeloAnimacionesQuaternius.gd, assets/modelos/quaternius/universal_animation_library_standard/ y memorias.
+
+### 2026-11-02 — Documentar el legado antes de mover rutas
+
+Decisión:
+Mejorar la orientación del repositorio con un README público y notas de archivo, manteniendo scripts, escenas, rutas `res://` y modelos antiguos en sus ubicaciones actuales.
+
+Motivo:
+Hay archivos de controladores en la raíz y escenas en distintas carpetas; moverlos en una limpieza general puede romper referencias de Godot. Los modelos Caballero no se usan en la escena de jugador actual, pero deben seguir disponibles como respaldo por decisiones anteriores.
+
+Consecuencias:
+- `README.md` explica entrada, ejecución, controles, pruebas y carpetas.
+- `assets/modelos/caballero/README_ARCHIVO.md` identifica los modelos como archivo histórico; no se eliminan.
+- Las tareas antiguas de ese modelo dejan de aparecer como backlog activo.
+- Una migración futura de rutas requiere actualizar y verificar referencias de escenas por separado.
+
+Archivos afectados:
+README.md, assets/modelos/caballero/README_ARCHIVO.md y memorias.

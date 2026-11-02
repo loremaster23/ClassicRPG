@@ -5,6 +5,8 @@ Motor: Godot 4.7.2
 Repositorio: https://github.com/loremaster23/ClassicRPG
 Rama principal: main
 
+`README.md` es la guía pública para abrir y ejecutar el juego. Los documentos enumerados a continuación son memoria interna y protocolo de continuidad; no sustituyen el README.
+
 ## OBLIGATORIO ANTES DE TRABAJAR
 
 Toda IA debe leer:

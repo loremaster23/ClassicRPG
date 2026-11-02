@@ -5,6 +5,14 @@
 Las tareas deben comprobarse antes de marcarlas como completadas.
 Revisar un archivo no significa que el sistema esté terminado.
 
+## Resumen activo y convención de lectura — 02/11/2026
+
+- La escena inicial actual es `MenuInicio.tscn`; el menú abre `Mapa1/Escena1.tscn`.
+- El personaje activo es Male_Ranger con cabeza UBC y locomoción retargeteada desde UAL Standard. La integración técnica está comprobada; queda la revisión visual del usuario y completar/afinar otros sistemas RPG.
+- El objetivo de desarrollo sigue siendo el juego individual; la infraestructura multijugador se conserva.
+- Las secciones de fases y verificaciones fechadas más abajo son registros de cómo evolucionó el proyecto. Si sus casillas contradicen este resumen o el estado más reciente de `ESTADO_ACTUAL.md`, prevalece el registro más reciente.
+- Las tareas del modelo procedural Caballero se archivan: los archivos se mantienen como respaldo en `assets/modelos/caballero/` y no son el personaje activo.
+
 ## Sistema de memoria
 
 - [x] Crear estructura de carpetas.
@@ -32,30 +40,18 @@ Revisar un archivo no significa que el sistema esté terminado.
 - [x] Comprobar el estado Git de la rama main.
 - [ ] Realizar pruebas funcionales adicionales cuando los cambios lo requieran.
 
-## Modelo 3D
+## Modelo 3D legado — archivado
 
-- [ ] Revisar Caballero_v2.blend.
-- [ ] Mejorar silueta y proporciones.
-- [ ] Reducir apariencia cúbica.
-- [ ] Mejorar casco y armadura.
-- [ ] Mejorar espada y escudo.
-- [ ] Mejorar materiales.
-- [ ] Exportar GLB mejorado.
-- [ ] Comprobar en Godot.
-- [ ] Evaluar integración sin reemplazar el personaje actual.
+El trabajo de mejora de `Caballero_v2.blend` ya no es una tarea activa: el jugador utiliza Male_Ranger de Quaternius. Las versiones anteriores siguen conservadas como respaldo en `assets/modelos/caballero/`; consulta `README_ARCHIVO.md` antes de reutilizarlas.
 
 ## Personaje
 
-- [x] Inspeccionar Jugador.tscn.
-- [x] Inspeccionar el script Jugador.gd asociado.
-- [x] Identificar el sistema actual de animación procedural.
-- [ ] Evaluar Skeleton3D.
-- [ ] Diseñar e implementar rigging.
-- [ ] Implementar animaciones esqueléticas.
-- [ ] Animaciones de movimiento.
-- [ ] Animaciones de combate.
+- [x] Inspeccionar Jugador.tscn y su controlador.
+- [x] Importar Male_Ranger y preparar la cabeza UBC como representación visual.
+- [x] Retargetear Idle, Walk, trote/sprint, salto, ciclo aéreo/caída y aterrizaje con `AnimationTree`.
+- [ ] El usuario comprobará visualmente orientación, transiciones y ajuste del atuendo.
+- [ ] Completar/afinar la animación de combate para el modelo activo cuando se aborde ese trabajo.
 - [ ] Equipamiento intercambiable.
-- [ ] Evaluar integración de modelos mejorados sin sustituir el personaje actual.
 
 ## Cámara y controles
 
@@ -648,3 +644,11 @@ No abrir GUI ni evaluar estética por cuenta del agente. Fase 7 sigue activa; co
 - [x] Retirar copias locales `.bak`/`RESPALDO` sin referencias, cursores alternativos no usados y escena vacía no referenciada.
 - [x] Conservar el modelo anterior como respaldo de escena y los paquetes fuente originales.
 - [ ] El usuario decidirá si más adelante quiere retirar otros recursos fuente de paquetes; se conservaron para respetar la instrucción anterior de no eliminar originales.
+
+## Organización del repositorio — 02/11/2026
+
+- [x] Añadir README público con instrucciones de ejecución, estructura, pruebas y recursos.
+- [x] Documentar `assets/modelos/caballero/` como archivo histórico sin borrar los modelos.
+- [x] Marcar como archivadas las tareas antiguas del Caballero y como completado el retarget/locomoción UAL en el resumen inicial.
+- [x] Ejecutar las 12 pruebas headless existentes: 12/12 código 0.
+- [ ] Si se reorganizan rutas de scripts/escenas, hacerlo como migración aparte y actualizar/verificar referencias `res://`; no moverlas como parte de una limpieza documental.

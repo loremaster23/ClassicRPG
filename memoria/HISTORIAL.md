@@ -882,3 +882,9 @@ Límite del paquete Standard: solo trae un ciclo Walk, por eso el BlendSpace reu
 ## 02/11/2026 — Limpieza del proyecto
 
 Se revisaron las referencias de los sobrantes y se retiraron las carpetas/copias locales antiguas `RESPALDO_*` y `*.bak`, los archivos de cursor de guantelete que ya no usa el proyecto y la escena vacía `node_3d.tscn` (sin referencias; la escena principal es `MenuInicio.tscn`). Se conservaron el modelo anterior oculto como respaldo y los recursos fuente originales de Quaternius. No se modificó código de juego en esta limpieza. La verificación headless inmediatamente anterior había pasado 12/12; no se repitió tras retirar archivos sin referencias.
+
+## 02/11/2026 — Organización y guía de uso
+
+Se añadió un `README.md` de usuario/desarrollo en la raíz: versión de Godot, ejecución del menú, controles publicados, mapa de carpetas, comandos de prueba y ubicación de licencias. Se añadió `assets/modelos/caballero/README_ARCHIVO.md` para explicar que los modelos Caballero son respaldos históricos no referenciados por la ejecución actual. Se preservaron sus archivos y `Main.tscn`.
+
+Se aclaró el estado inicial de `memoria/PENDIENTES.md`: la línea antigua de trabajo del Caballero queda archivada y la integración UAL del rig figura como completada técnicamente. `memoria/LEEME_PRIMERO.md` ahora diferencia el README público de los documentos internos. No se cambiaron rutas o código de juego. Las 12 pruebas `Prueba*.gd` finalizaron con código 0 en Godot 4.7.2; no hubo revisión visual.
