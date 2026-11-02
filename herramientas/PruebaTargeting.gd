@@ -1,4 +1,4 @@
-extends SceneTree
+﻿extends SceneTree
 
 const MultijugadorScript := preload("res://scripts/cliente/Multijugador.gd")
 
@@ -53,6 +53,27 @@ func _initialize() -> void:
 	multi.seleccionar_objetivo(0)
 	if multi.id_objetivo != 0 or objetivo_recibido_id != 0:
 		push_error("Error: no deselecciono correctamente.")
+		quit(1)
+		return
+
+	# Prueba 4: Seleccionar por ID directo
+	multi.seleccionar_objetivo(2)
+	if multi.id_objetivo != 2 or objetivo_recibido_id != 2 or str(datos_recibidos.get("name", "")) != "Habitante":
+		push_error("Error: seleccionar_objetivo por ID falló.")
+		quit(1)
+		return
+
+	# Prueba 5: Selección por raycast simulado (apuntando hacia n3)
+	var hit_id := multi.seleccionar_objetivo_por_rayo(Vector3(-3, 0, 5), Vector3(0, 0, -1), 10.0)
+	if hit_id != 3 or multi.id_objetivo != 3:
+		push_error("Error: selección por raycast falló al detectar n3.")
+		quit(1)
+		return
+
+	# Prueba 6: Selección por raycast hacia la nada (debe retornar 0 y no deseleccionar el activo)
+	var miss_id := multi.seleccionar_objetivo_por_rayo(Vector3(100, 0, 100), Vector3(0, 1, 0), 10.0)
+	if miss_id != 0 or multi.id_objetivo != 3:
+		push_error("Error: raycast fallido no debe alterar el objetivo actual.")
 		quit(1)
 		return
 

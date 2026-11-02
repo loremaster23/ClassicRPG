@@ -1,11 +1,13 @@
-
+﻿
 extends Node
 
 const DIRECCION := "ws://127.0.0.1:9000"
+var direccion_servidor := DIRECCION
 const EscenaJugador := preload("res://Personajes/Jugador.tscn")
 const IMAGEN_SERVIDOR_LLENO := preload("res://assets/ui/servidor_lleno.png")
 const GeneradorTerreno := preload("res://scripts/compartido/GeneradorTerreno.gd")
 const FabricaEntidades := preload("res://scripts/cliente/FabricaEntidades.gd")
+const CatalogoObjetos := preload("res://scripts/compartido/CatalogoObjetos.gd")
 
 const DISTANCIA_CORRECCION_BRUSCA := 3.0
 const VELOCIDAD_CORRECCION := 10.0
@@ -29,6 +31,12 @@ var jugadores_remotos: Dictionary = {}
 var objetivos_remotos: Dictionary = {}
 var entidades_remotas: Dictionary = {}
 var datos_entidades: Dictionary = {}
+var inventario: Dictionary = {}
+var oro := 0
+var progresion: Dictionary = {"level": 1, "xp": 0, "xp_to_next": 100}
+var salud_local: Dictionary = {"hp": 100, "hp_max": 100, "muerto": false}
+var mision_actual: Dictionary = {"id": "caza_lobos", "estado": "disponible", "lobos": 0, "objetivo_lobos": 3}
+var equipamiento_local: Dictionary = {"arma": ""}
 var objetivos_entidades: Dictionary = {}
 
 var mundo_validado := false
@@ -36,6 +44,18 @@ var configuracion_mundo: Dictionary = {}
 
 signal objetivo_cambiado(id: int, datos: Dictionary, nodo: Node3D)
 signal resultado_ataque(datos: Dictionary)
+signal inventario_cambiado(items: Dictionary)
+signal inventario_rechazado(item_id: String, motivo: String)
+signal oro_cambiado(cantidad: int)
+signal resultado_compra(datos: Dictionary)
+signal progresion_cambiada(datos: Dictionary)
+signal salud_jugador_cambiada(datos: Dictionary)
+signal mision_cambiada(datos: Dictionary, mensaje: String)
+signal resultado_objeto(datos: Dictionary)
+signal resultado_descartar_objeto(datos: Dictionary)
+signal equipamiento_cambiado(datos: Dictionary)
+signal resultado_equipamiento(datos: Dictionary)
+signal resultado_atributo(datos: Dictionary)
 
 var id_objetivo := 0
 var nodo_objetivo: Node3D = null
@@ -44,7 +64,7 @@ var nodo_objetivo: Node3D = null
 func iniciar(jugador: CharacterBody3D) -> void:
 	jugador_local = jugador
 
-	var error := cliente.create_client(DIRECCION)
+	var error := cliente.create_client(direccion_servidor)
 
 	if error != OK:
 		push_error("Error al conectar con el servidor: %s" % error)
@@ -83,7 +103,7 @@ func _process(delta: float) -> void:
 			conectado = true
 			print("Conexión multijugador establecida.")
 
-		if id_local != 0:
+		if id_local != 0 and is_instance_valid(jugador_local) and jugador_local.controles_habilitados:
 			tiempo_envio += delta
 
 			if tiempo_envio >= 0.1:
@@ -100,6 +120,12 @@ func _procesar_mensaje(datos: Dictionary) -> void:
 		"welcome":
 			id_local = int(datos.get("id", 0))
 			print("Identificado en el servidor. ID: ", id_local)
+			_actualizar_inventario(datos.get("inventory", {}))
+			_actualizar_oro(datos.get("gold", 0))
+			_actualizar_progresion(datos.get("progression", {}))
+			_actualizar_salud_local(datos.get("player_health", {}))
+			_actualizar_mision(datos.get("quest", {}))
+			_actualizar_equipamiento(datos.get("equipment", {}))
 
 			_validar_mundo(datos.get("world", {}))
 
@@ -162,13 +188,65 @@ func _procesar_mensaje(datos: Dictionary) -> void:
 		"entity_removed":
 			_eliminar_entidad_remota(int(datos.get("id", 0)))
 
+		"player_attack":
+			_animar_jugador_remoto(
+				int(datos.get("id", 0)),
+				str(datos.get("skill_id", "normal"))
+			)
+
+		"player_health_updated":
+			var id_salud := int(datos.get("id", 0))
+			if id_salud == id_local:
+				_actualizar_salud_local(datos)
+
+		"player_respawned":
+			_procesar_respawn_jugador(datos)
+
+		"item_use_result":
+			emit_signal("resultado_objeto", datos)
+		"discard_item_result":
+			emit_signal("resultado_descartar_objeto", datos)
+		"equipment_updated":
+			_actualizar_equipamiento(datos.get("equipment", {}))
+
+		"equipment_result":
+			emit_signal("resultado_equipamiento", datos)
+		"attribute_result":
+			emit_signal("resultado_atributo", datos)
+
+		"quest_updated":
+			_actualizar_mision(datos.get("quest", {}), str(datos.get("message", "")))
+
 		"attack_result":
 			emit_signal("resultado_ataque", datos)
+
+		"inventory_updated":
+			_actualizar_inventario(datos.get("items", {}))
+
+		"gold_updated":
+			_actualizar_oro(datos.get("gold", 0))
+
+		"shop_result":
+			emit_signal("resultado_compra", datos)
+
+		"inventory_rejected":
+			emit_signal("inventario_rechazado", str(datos.get("item_id", "")), str(datos.get("reason", "")))
+
+		"progression_updated":
+			_actualizar_progresion(datos.get("progression", {}))
 
 		"player_left":
 			var id := int(datos.get("id", 0))
 			_eliminar_remoto(id)
 			print("Jugador desconectado: ", id)
+
+func _animar_jugador_remoto(id: int, skill_id: String = "normal") -> void:
+	if id == id_local or not jugadores_remotos.has(id):
+		return
+
+	var remoto = jugadores_remotos[id]
+	if is_instance_valid(remoto) and remoto.has_method("animar_ataque"):
+		remoto.animar_ataque(skill_id)
 
 
 func _aplicar_correccion(datos: Dictionary) -> void:
@@ -228,6 +306,112 @@ func _actualizar_correccion_local(delta: float) -> void:
 		yaw_correccion,
 		minf(delta * VELOCIDAD_CORRECCION, 1.0)
 	)
+
+
+func _actualizar_salud_local(datos: Variant) -> void:
+	if typeof(datos) != TYPE_DICTIONARY:
+		return
+
+	var id_salud := int(datos.get("id", id_local))
+	if id_salud != id_local:
+		return
+
+	salud_local = {
+		"id": id_local,
+		"hp": maxi(0, int(datos.get("hp", 100))),
+		"hp_max": maxi(1, int(datos.get("hp_max", 100))),
+		"muerto": bool(datos.get("muerto", false)),
+		"respawn_seconds": maxf(0.0, float(datos.get("respawn_seconds", 0.0)))
+	}
+
+	if is_instance_valid(jugador_local):
+		jugador_local.controles_habilitados = not bool(salud_local["muerto"])
+		if bool(salud_local["muerto"]):
+			jugador_local.velocity.x = 0.0
+			jugador_local.velocity.z = 0.0
+
+	emit_signal("salud_jugador_cambiada", salud_local.duplicate(true))
+
+
+func _procesar_respawn_jugador(datos: Dictionary) -> void:
+	var id := int(datos.get("id", 0))
+	var posicion := _leer_posicion(datos)
+	var yaw := float(datos.get("yaw", 0.0))
+
+	if id == id_local:
+		_actualizar_salud_local(datos)
+		if not is_instance_valid(jugador_local):
+			return
+		jugador_local.global_position = posicion
+		jugador_local.velocity = Vector3.ZERO
+		jugador_local.controles_habilitados = true
+		correccion_pendiente = false
+		var modelo_local: Node3D = jugador_local.get_node("Modelo")
+		modelo_local.rotation.y = yaw
+		return
+
+	if objetivos_remotos.has(id):
+		var objetivo: Dictionary = objetivos_remotos[id]
+		objetivo["pos"] = posicion
+		objetivo["yaw"] = yaw
+		objetivo["sprint"] = false
+		objetivos_remotos[id] = objetivo
+	if jugadores_remotos.has(id):
+		var remoto = jugadores_remotos[id]
+		if is_instance_valid(remoto):
+			remoto.global_position = posicion
+			remoto.velocity = Vector3.ZERO
+			remoto.corriendo = false
+			var modelo_remoto: Node3D = remoto.get_node("Modelo")
+			modelo_remoto.rotation.y = yaw
+
+
+func _actualizar_progresion(datos: Variant) -> void:
+	if typeof(datos) != TYPE_DICTIONARY:
+		return
+
+	var nivel := maxi(1, int(datos.get("level", 1)))
+	var xp_siguiente := maxi(1, int(datos.get("xp_to_next", 100)))
+	var experiencia := clampi(int(datos.get("xp", 0)), 0, xp_siguiente - 1)
+	progresion = {
+		"level": nivel,
+		"xp": experiencia,
+		"xp_to_next": xp_siguiente,
+		"strength": maxi(0, int(datos.get("strength", 0))),
+		"vitality": maxi(0, int(datos.get("vitality", 0))),
+		"attribute_points": maxi(0, int(datos.get("attribute_points", 0)))
+	}
+	emit_signal("progresion_cambiada", progresion.duplicate(true))
+
+func _actualizar_inventario(datos: Variant) -> void:
+	if typeof(datos) != TYPE_DICTIONARY:
+		return
+
+	var inventario_nuevo: Dictionary = {}
+	for id_var in datos.keys():
+		var id_objeto := str(id_var)
+		var definicion := CatalogoObjetos.obtener(id_objeto)
+		if definicion.is_empty():
+			continue
+
+		var cantidad := clampi(
+			int(datos[id_var]),
+			0,
+			int(definicion.get("max_pila", 1))
+		)
+		if cantidad > 0:
+			inventario_nuevo[id_objeto] = cantidad
+
+	inventario = inventario_nuevo
+	emit_signal("inventario_cambiado", inventario.duplicate(true))
+
+
+func _actualizar_oro(valor: Variant) -> void:
+	if typeof(valor) != TYPE_INT and typeof(valor) != TYPE_FLOAT:
+		oro = 0
+	else:
+		oro = clampi(int(valor), 0, 999999999)
+	emit_signal("oro_cambiado", oro)
 
 
 func _validar_mundo(datos: Variant) -> void:
@@ -364,22 +548,194 @@ func _crear_entidad_remota(datos: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("select_next_target"):
 		seleccionar_siguiente_objetivo()
-	elif event.is_action_pressed("ability_1"):
+	elif event.is_action_pressed("ability_1") or (event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_1 or event.physical_keycode == KEY_1 or event.keycode == KEY_KP_1 or event.physical_keycode == KEY_KP_1)):
 		atacar_objetivo()
+	elif event.is_action_pressed("ability_3") or (event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_3 or event.physical_keycode == KEY_3 or event.keycode == KEY_KP_3 or event.physical_keycode == KEY_KP_3)):
+		atacar_objetivo("golpe_pesado")
+	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_Q or event.physical_keycode == KEY_Q):
+		equipar_objeto("espada_del_habitante")
+	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_2 or event.physical_keycode == KEY_2):
+		usar_objeto("pocion_curativa")
+	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_E or event.physical_keycode == KEY_E):
+		interactuar_objetivo()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if id_objetivo != 0:
 			seleccionar_objetivo(0)
 
 
-func atacar_objetivo() -> void:
-	if id_objetivo <= 0 or not conectado:
+func _actualizar_mision(datos: Variant, mensaje: String = "") -> void:
+	if typeof(datos) != TYPE_DICTIONARY:
+		return
+
+	mision_actual = datos.duplicate(true)
+	emit_signal("mision_cambiada", mision_actual.duplicate(true), mensaje)
+
+
+func _actualizar_equipamiento(datos: Variant) -> void:
+	if typeof(datos) != TYPE_DICTIONARY:
+		return
+	equipamiento_local = datos.duplicate(true)
+	emit_signal("equipamiento_cambiado", equipamiento_local.duplicate(true))
+
+
+func equipar_objeto(id_objeto: String) -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		emit_signal("resultado_equipamiento", {"success": false, "item_id": id_objeto, "reason": "player_dead"})
+		return
+	if not conectado:
+		emit_signal("resultado_equipamiento", {"success": false, "item_id": id_objeto, "reason": "not_connected"})
+		return
+
+	var mensaje := {
+		"type": "equip_item",
+		"item_id": id_objeto
+	}
+	var error := cliente.put_packet(JSON.stringify(mensaje).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando equipo: %s" % error)
+
+
+func asignar_atributo(atributo: String) -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		emit_signal("resultado_atributo", {"success": false, "attribute": atributo, "reason": "player_dead"})
+		return
+	if not conectado:
+		emit_signal("resultado_atributo", {"success": false, "attribute": atributo, "reason": "not_connected"})
+		return
+	var mensaje := {
+		"type": "assign_attribute",
+		"attribute": atributo
+	}
+	var error := cliente.put_packet(JSON.stringify(mensaje).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando asignación de atributo: %s" % error)
+
+
+func usar_objeto(id_objeto: String) -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		emit_signal("resultado_objeto", {"success": false, "item_id": id_objeto, "reason": "player_dead"})
+		return
+	if not conectado:
+		emit_signal("resultado_objeto", {"success": false, "item_id": id_objeto, "reason": "not_connected"})
+		return
+
+	var mensaje := {
+		"type": "use_item",
+		"item_id": id_objeto
+	}
+	var error := cliente.put_packet(JSON.stringify(mensaje).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando uso de objeto: %s" % error)
+
+
+func descartar_objeto(id_objeto: String) -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		emit_signal("resultado_descartar_objeto", {"success": false, "item_id": id_objeto, "reason": "player_dead"})
+		return
+	if not conectado:
+		emit_signal("resultado_descartar_objeto", {"success": false, "item_id": id_objeto, "reason": "not_connected"})
+		return
+
+	var mensaje := {
+		"type": "discard_item",
+		"item_id": id_objeto
+	}
+	var error := cliente.put_packet(JSON.stringify(mensaje).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando descarte de objeto: %s" % error)
+
+
+func comprar_objeto(id_objeto: String) -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		emit_signal("resultado_compra", {"success": false, "item_id": id_objeto, "reason": "player_dead"})
+		return
+	if not conectado:
+		emit_signal("resultado_compra", {"success": false, "item_id": id_objeto, "reason": "not_connected"})
+		return
+	var error := cliente.put_packet(JSON.stringify({"type": "buy_item", "item_id": id_objeto}).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando compra: %s" % error)
+
+
+func interactuar_objetivo() -> void:
+	if not is_instance_valid(jugador_local) or not jugador_local.controles_habilitados:
+		return
+	if id_objetivo <= 0:
+		emit_signal("mision_cambiada", mision_actual.duplicate(true), "Selecciona al Habitante con Tab.")
+		return
+	if not conectado:
+		emit_signal("mision_cambiada", mision_actual.duplicate(true), "Sin conexión con el mundo.")
+		return
+
+	var mensaje := {
+		"type": "interact",
+		"target_id": id_objetivo
+	}
+	var error := cliente.put_packet(JSON.stringify(mensaje).to_utf8_buffer())
+	if error != OK:
+		push_error("Error enviando interacción: %s" % error)
+
+
+func atacar_objetivo(skill_id: String = "normal") -> void:
+	if is_instance_valid(jugador_local) and not jugador_local.controles_habilitados:
+		emit_signal("resultado_ataque", {"success": false, "reason": "player_dead"})
+		return
+
+	if is_instance_valid(jugador_local) and jugador_local.has_method("animar_ataque"):
+		jugador_local.animar_ataque(skill_id)
+
+	if id_objetivo <= 0:
+		emit_signal("resultado_ataque", {
+			"success": false,
+			"reason": "no_target"
+		})
+		return
+
+	if not conectado:
+		emit_signal("resultado_ataque", {
+			"success": false,
+			"reason": "not_connected"
+		})
 		return
 
 	var mensaje := {
 		"type": "attack",
-		"target_id": id_objetivo
+		"target_id": id_objetivo,
+		"skill_id": skill_id
 	}
-	cliente.send_text(JSON.stringify(mensaje))
+	var error := cliente.put_packet(
+		JSON.stringify(mensaje).to_utf8_buffer()
+	)
+	if error != OK:
+		push_error("Error enviando paquete de ataque: %s" % error)
+
+
+func seleccionar_objetivo_por_rayo(origen: Vector3, direccion: Vector3, distancia_max: float = 60.0) -> int:
+	var mejor_id := 0
+	var menor_distancia_proyeccion := distancia_max
+	var radio_seleccion := 1.25
+
+	for id_var in entidades_remotas.keys():
+		var id := int(id_var)
+		var nodo = entidades_remotas[id]
+		if not is_instance_valid(nodo):
+			continue
+		var pos: Vector3 = nodo.global_position if nodo.is_inside_tree() else nodo.position
+		# Considerar altura de torso/centro aproximado de entidad
+		var centro_entidad := pos + Vector3(0.0, 0.75, 0.0)
+		var hacia_entidad := centro_entidad - origen
+		var proyeccion := hacia_entidad.dot(direccion)
+		if proyeccion <= 0.0 or proyeccion > distancia_max:
+			continue
+		var punto_cercano := origen + direccion * proyeccion
+		var distancia_lateral := punto_cercano.distance_to(centro_entidad)
+		if distancia_lateral <= radio_seleccion and proyeccion < menor_distancia_proyeccion:
+			menor_distancia_proyeccion = proyeccion
+			mejor_id = id
+
+	if mejor_id > 0:
+		seleccionar_objetivo(mejor_id)
+	return mejor_id
 
 
 func seleccionar_siguiente_objetivo() -> void:

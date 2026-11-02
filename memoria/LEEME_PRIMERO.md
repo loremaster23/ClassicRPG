@@ -25,6 +25,10 @@ Después debe comprobar el estado real del proyecto y Git.
 Continuar el proyecto existente.
 Nunca empezar de cero ni descartar trabajo anterior.
 
+## DIRECCIÓN VIGENTE DEL DESARROLLO — 02/11/2026
+
+El objetivo de desarrollo desde ahora es completar primero el RPG para un solo jugador. Se conserva íntegramente la infraestructura de dos jugadores ya desarrollada; no borrar ni reemplazar scripts, escenas, recursos o pruebas multijugador. Aplazar las mejoras exclusivas de online hasta que se retome esa etapa. Consultar la decisión vigente en DECISIONES.md y el plan en CONTINUAR_CON_IA.md.
+
 ## SISTEMA DE MEMORIA
 
 La memoria es compartida entre ChatGPT, Copilot, OpenCode y cualquier otra IA.

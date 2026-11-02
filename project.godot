@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="ClassicRPG"
-run/main_scene="res://Mapa1/Escena1.tscn"
+run/main_scene="res://MenuInicio.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+mouse_cursor/custom_image="res://assets/cursores/Point.png"
 
 [input]
 

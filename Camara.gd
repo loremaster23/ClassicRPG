@@ -1,9 +1,10 @@
-extends Node3D
+﻿extends Node3D
 ## Camara orbital en tercera persona con colision contra el terreno.
 
 const DISTANCIA_MIN := 4.0
 const DISTANCIA_MAX := 22.0
 const SENSIBILIDAD := 0.0045
+const UMBRAL_ARRASTRE_IZQUIERDO := 4.0
 const PITCH_MIN := -0.10
 const PITCH_MAX := 1.15
 const ALTURA_FOCO := 1.55
@@ -11,6 +12,12 @@ const VELOCIDAD_GIRO := 1.8
 
 var objetivo: Node3D
 var camara: Camera3D
+var nodo_multijugador: Node
+var _pos_clic_izquierdo := Vector2.ZERO
+var _posicion_raton_retorno := Vector2.ZERO
+var _raton_capturado_por_camara := false
+var _clic_izquierdo_pulsado := false
+var _distancia_arrastre_izquierdo := 0.0
 
 var yaw := 0.0
 var pitch := 0.38
@@ -54,25 +61,57 @@ func _colocar_camara() -> void:
 func _unhandled_input(evento: InputEvent) -> void:
 	if evento is InputEventMouseButton:
 		if evento.button_index == MOUSE_BUTTON_RIGHT:
-			_orbiting = evento.pressed
-			_actualizar_modo_raton()
+			if evento.pressed:
+				_orbiting = true
+				_actualizar_modo_raton(evento.position)
+			else:
+				_orbiting = false
+				_actualizar_modo_raton()
 
 		if evento.button_index == MOUSE_BUTTON_LEFT:
-			_freeorbiting = evento.pressed
-			_actualizar_modo_raton()
-
+			if evento.pressed:
+				_pos_clic_izquierdo = evento.position
+				_clic_izquierdo_pulsado = true
+				_distancia_arrastre_izquierdo = 0.0
+				_seleccionar_objetivo_con_cursor(_pos_clic_izquierdo)
+			else:
+				_clic_izquierdo_pulsado = false
+				_distancia_arrastre_izquierdo = 0.0
+				_freeorbiting = false
+				_actualizar_modo_raton()
 	if evento is InputEventMouseButton:
 		if Input.is_action_pressed("camera_zoom_in"):
 			distancia_objetivo = maxf(distancia_objetivo - 0.8, DISTANCIA_MIN)
 		elif Input.is_action_pressed("camera_zoom_out"):
 			distancia_objetivo = minf(distancia_objetivo + 0.8, DISTANCIA_MAX)
 
-	if evento is InputEventMouseMotion and (_orbiting or _freeorbiting):
-		yaw -= evento.relative.x * SENSIBILIDAD
-		pitch = clampf(pitch + evento.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX)
+	if evento is InputEventMouseMotion:
+		if _clic_izquierdo_pulsado and not _freeorbiting:
+			_distancia_arrastre_izquierdo += evento.relative.length()
+			if _distancia_arrastre_izquierdo >= UMBRAL_ARRASTRE_IZQUIERDO:
+				_freeorbiting = true
+				_actualizar_modo_raton(_pos_clic_izquierdo)
+		if _orbiting or _freeorbiting:
+			yaw -= evento.relative.x * SENSIBILIDAD
+			pitch = clampf(pitch + evento.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX)
 
-func _actualizar_modo_raton() -> void:
+func _actualizar_modo_raton(posicion_cursor_al_capturar: Vector2 = Vector2.ZERO) -> void:
 	if _orbiting or _freeorbiting:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if not _raton_capturado_por_camara:
+			_posicion_raton_retorno = get_viewport().get_final_transform() * posicion_cursor_al_capturar
+			_raton_capturado_por_camara = true
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if _raton_capturado_por_camara:
+			Input.warp_mouse(_posicion_raton_retorno)
+			_raton_capturado_por_camara = false
+
+func _seleccionar_objetivo_con_cursor(pos_pantalla: Vector2) -> void:
+	if camara == null or nodo_multijugador == null:
+		return
+	if not nodo_multijugador.has_method("seleccionar_objetivo_por_rayo"):
+		return
+	var origen := camara.project_ray_origin(pos_pantalla)
+	var direccion := camara.project_ray_normal(pos_pantalla)
+	nodo_multijugador.call("seleccionar_objetivo_por_rayo", origen, direccion, 75.0)

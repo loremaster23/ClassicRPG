@@ -9,6 +9,16 @@
 - Comprobar los archivos reales.
 - No asumir que la documentación está actualizada.
 
+## DIRECCIÓN ACTUAL DEL PROYECTO — 02/11/2026
+
+Priorizar una experiencia RPG completa para un solo jugador. Para las nuevas tareas:
+- Desarrollar primero el ciclo individual: mundo, combate, NPC, objetos, inventario, misiones y progreso.
+- Conservar intacto todo lo existente para dos jugadores, incluidas conexiones, servidor, sincronización, escenas, recursos y pruebas.
+- No dedicar el siguiente alcance a ampliar funciones exclusivamente multijugador; registrarlas como trabajo futuro.
+- Evitar acoplar la lógica nueva a jugadores remotos cuando no sea necesario, para poder reutilizarla al volver a dos jugadores.
+- El modo individual debe poder jugarse sin requerir un segundo cliente. La forma técnica se decidirá al inspeccionar los sistemas afectados, preservando el modo de red ya existente.
+- Esta decisión cambia la prioridad, no el motor, la arquitectura existente ni el historial del proyecto.
+
 ## 2. Protección
 
 - No borrar archivos sin autorización.

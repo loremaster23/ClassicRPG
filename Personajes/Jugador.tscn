@@ -1,6 +1,9 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Jugador.gd" id="1_x5pax"]
+[ext_resource type="PackedScene" path="res://assets/modelos/quaternius/modular_character_outfits_fantasy/Male_Ranger.gltf" id="2_quaternius_ranger"]
+[ext_resource type="PackedScene" path="res://assets/modelos/quaternius/universal_base_characters_standard/Cabeza_Superhero_Male.glb" id="3_quaternius_head"]
+[ext_resource type="PackedScene" path="res://assets/modelos/quaternius/universal_animation_library_standard/UAL1_Standard.glb" id="4_quaternius_animations"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g3ilm"]
 radius = 0.42
@@ -206,26 +209,31 @@ shape = SubResource("CapsuleShape3D_g3ilm")
 [node name="Modelo" type="Node3D" parent="." unique_id=425963243]
 
 [node name="Torso" type="MeshInstance3D" parent="Modelo" unique_id=1354764057]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.38, 0)
 material_override = SubResource("StandardMaterial3D_kk3h4")
 mesh = SubResource("BoxMesh_khw22")
 
 [node name="Pechera" type="MeshInstance3D" parent="Modelo" unique_id=1163336976]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, -0.28)
 material_override = SubResource("StandardMaterial3D_a62pa")
 mesh = SubResource("BoxMesh_67t6b")
 
 [node name="Cinturon" type="MeshInstance3D" parent="Modelo" unique_id=1783855254]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.97, 0)
 material_override = SubResource("StandardMaterial3D_g6mw8")
 mesh = SubResource("BoxMesh_v700d")
 
 [node name="Hebilla" type="MeshInstance3D" parent="Modelo" unique_id=490953242]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.97, -0.31)
 material_override = SubResource("StandardMaterial3D_cxvds")
 mesh = SubResource("BoxMesh_txhoy")
 
 [node name="PiernaIzq" type="Node3D" parent="Modelo" unique_id=238790403]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.23, 0.95, 0)
 
 [node name="MusloIzq" type="MeshInstance3D" parent="Modelo/PiernaIzq" unique_id=463032905]
@@ -239,6 +247,7 @@ material_override = SubResource("StandardMaterial3D_35i2h")
 mesh = SubResource("BoxMesh_jwugw")
 
 [node name="PiernaDer" type="Node3D" parent="Modelo" unique_id=1257553286]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23, 0.95, 0)
 
 [node name="MusloDer" type="MeshInstance3D" parent="Modelo/PiernaDer" unique_id=2077401296]
@@ -252,6 +261,7 @@ material_override = SubResource("StandardMaterial3D_l36f1")
 mesh = SubResource("BoxMesh_nlaxv")
 
 [node name="BrazoIzq" type="Node3D" parent="Modelo" unique_id=528993503]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.56, 1.66, 0)
 
 [node name="MangaIzq" type="MeshInstance3D" parent="Modelo/BrazoIzq" unique_id=1244571926]
@@ -275,6 +285,7 @@ material_override = SubResource("StandardMaterial3D_1xea8")
 mesh = SubResource("SphereMesh_rlxfi")
 
 [node name="BrazoDer" type="Node3D" parent="Modelo" unique_id=1753260395]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.56, 1.66, 0)
 
 [node name="MangaDer" type="MeshInstance3D" parent="Modelo/BrazoDer" unique_id=989443446]
@@ -288,46 +299,55 @@ material_override = SubResource("StandardMaterial3D_32equ")
 mesh = SubResource("BoxMesh_4pfdg")
 
 [node name="HombreraIzq" type="MeshInstance3D" parent="Modelo" unique_id=1423770050]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 1.8, 0)
 material_override = SubResource("StandardMaterial3D_1psvk")
 mesh = SubResource("SphereMesh_3nxg4")
 
 [node name="HombreraDer" type="MeshInstance3D" parent="Modelo" unique_id=1873047341]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, 1.8, 0)
 material_override = SubResource("StandardMaterial3D_002ay")
 mesh = SubResource("SphereMesh_vmgf5")
 
 [node name="Cabeza" type="MeshInstance3D" parent="Modelo" unique_id=35569534]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.03, 0)
 material_override = SubResource("StandardMaterial3D_dssai")
 mesh = SubResource("SphereMesh_dei0q")
 
 [node name="Rostro" type="MeshInstance3D" parent="Modelo" unique_id=850381081]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99, -0.22)
 material_override = SubResource("StandardMaterial3D_1o2sm")
 mesh = SubResource("BoxMesh_on0qj")
 
 [node name="ProtectorNasal" type="MeshInstance3D" parent="Modelo" unique_id=1967558153]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.01, -0.29)
 material_override = SubResource("StandardMaterial3D_tokf8")
 mesh = SubResource("BoxMesh_iqxwl")
 
 [node name="OjoIzq" type="MeshInstance3D" parent="Modelo" unique_id=1273038292]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09, 2.01, -0.285)
 material_override = SubResource("StandardMaterial3D_lxdff")
 mesh = SubResource("BoxMesh_rrfow")
 
 [node name="OjoDer" type="MeshInstance3D" parent="Modelo" unique_id=742822984]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 2.01, -0.285)
 material_override = SubResource("StandardMaterial3D_yq4d2")
 mesh = SubResource("BoxMesh_e77rq")
 
 [node name="Capa" type="MeshInstance3D" parent="Modelo" unique_id=136762635]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0.31)
 material_override = SubResource("StandardMaterial3D_nqpjn")
 mesh = SubResource("BoxMesh_xwnsl")
 
 [node name="Espada" type="Node3D" parent="Modelo" unique_id=1109710014]
+visible = false
 transform = Transform3D(0.8660254, -0.5, 0, 0.5, 0.8660254, 0, 0, 0, 1, 0.2, 1.45, 0.36)
 
 [node name="Hoja" type="MeshInstance3D" parent="Modelo/Espada" unique_id=1268965737]
@@ -344,3 +364,12 @@ mesh = SubResource("BoxMesh_26ak6")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.41, 0)
 material_override = SubResource("StandardMaterial3D_fbpuh")
 mesh = SubResource("BoxMesh_6djav")
+
+[node name="VisualQuaternius" type="Node3D" parent="Modelo"]
+rotation = Vector3(0, 3.141593, 0)
+
+[node name="AparienciaQuaternius" parent="Modelo/VisualQuaternius" instance=ExtResource("2_quaternius_ranger")]
+
+[node name="CabezaBaseQuaternius" parent="Modelo/VisualQuaternius" instance=ExtResource("3_quaternius_head")]
+
+[node name="RigAnimacionesQuaternius" parent="Modelo/VisualQuaternius" instance=ExtResource("4_quaternius_animations")]

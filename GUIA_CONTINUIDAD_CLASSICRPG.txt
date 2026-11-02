@@ -1,6 +1,6 @@
 ﻿GUIA DE CONTINUIDAD - CLASSICRPG
-Actualizada: 31/10/2026
-Fuente de referencia: repositorio GitHub, rama main.
+Actualizada: 02/11/2026
+Fuente histórica: repositorio GitHub, rama main. La copia local puede incluir cambios aún no publicados.
 
 ============================================================
 1. IDENTIFICACION DEL PROYECTO
@@ -8,17 +8,26 @@ Fuente de referencia: repositorio GitHub, rama main.
 
 Nombre: ClassicRPG
 
-Objetivo:
-Desarrollar un MMORPG 3D inspirado en WoW Classic.
+Objetivo vigente:
+Desarrollar primero un RPG 3D de fantasía medieval para un solo jugador, inspirado en WoW Classic. La prioridad es completar el ciclo de juego individual: exploración, combate, enemigos, NPC, inventario, progresión y guardado local.
 
-Características previstas:
+Etapa futura:
+Retomar la modalidad para dos jugadores después de completar el alcance individual. La arquitectura, escenas, scripts, pruebas y funciones multijugador que ya existen se conservan para esa etapa. No eliminarlas, sobrescribirlas ni reconstruirlas sin necesidad técnica demostrada.
+
+Características de la etapa actual:
 - Personajes humanos.
-- Estética visual inspirada en WoW Classic.
-- Mundo 3D persistente.
-- Combate mediante selección de objetivos.
-- Arquitectura cliente-servidor.
-- Multijugador.
-- Futuro acceso desde navegador y dispositivos móviles.
+- Estética visual inspirada en WoW Classic, con identidad propia.
+- Mundo 3D explorable.
+- Combate y progresión para un jugador.
+- NPC, enemigos, objetos, inventario, misiones y guardado local por desarrollar según la prioridad del proyecto.
+
+Base futura conservada:
+- Arquitectura cliente-servidor y WebSocket ya existente.
+- Movimiento, combate y sincronización multijugador ya desarrollados y probados.
+- Reanudación futura del modo de dos jugadores.
+- Acceso desde navegador y dispositivos móviles queda fuera del alcance actual.
+
+
 
 Proyecto local:
 C:\Users\Bruker\OneDrive\DESARROLLO_RPG\ClassicRPG
@@ -418,6 +427,9 @@ No volver a implementar este sistema desde cero sin una razón técnica.
 10. ESTADO OFICIAL DE LAS FASES
 ============================================================
 
+NOTA DE VIGENCIA (02/11/2026):
+La tabla que sigue conserva las fases del plan MMORPG anterior como referencia histórica de sistemas ya construidos y pendientes. La prioridad actual es completar el RPG para un solo jugador. Las tareas online no son el siguiente objetivo; se conservan para retomarlas después. El estado real más reciente está en memoria/ESTADO_ACTUAL.md y memoria/PENDIENTES.md.
+
 FASE 1 - ARQUITECTURA Y ORGANIZACION
 ESTADO: COMPLETADA.
 
@@ -662,38 +674,27 @@ CRITERIOS:
 14. PROXIMOS PASOS RECOMENDADOS
 ============================================================
 
-PRIMER PASO:
-Revisar la escena Personajes/Jugador.tscn y sus nodos.
+DIRECCION ACTUAL:
+Completar primero una experiencia de RPG para un solo jugador. Ningún paso de esta lista autoriza a borrar o reescribir el cliente, servidor, escenas, sincronización o pruebas de dos jugadores existentes.
 
-Motivo:
-Los scripts principales ya muestran una base de movimiento y animación.
-Antes de ampliar la Fase 4 es necesario conocer la estructura real
-del modelo y sus recursos.
+PASO INMEDIATO:
+Prueba automatizada de capacidad del inventario completada en Godot 4.7.2 (código 0). Siguiente: auditar el flujo individual de inicio/ejecución y definir cómo jugar sin requerir un segundo cliente. La comprobación visual del nuevo panel queda a cargo del usuario.
 
-SEGUNDO PASO:
-Documentar el sistema de personaje existente y determinar qué mejoras
-son necesarias sin rehacer lo que ya funciona.
+SIGUIENTES BLOQUES DE JUEGO INDIVIDUAL:
+1. Completar inventario, objetos, uso y equipamiento.
+2. Desarrollar NPC, interacción y misiones individuales.
+3. Completar enemigos, IA, combate, botín y progresión.
+4. Desarrollar el guardado y la carga local de personaje y progreso.
+5. Integrar contenido, interfaz, balance y flujo de inicio/cierre de partida.
+6. Revisar que el juego pueda recorrerse como una experiencia de un solo jugador sin exigir un segundo cliente.
 
-TERCER PASO:
-Completar y mejorar las animaciones y estados del personaje.
+CRITERIO DE IMPLEMENTACION:
+Mantener las reglas de juego reutilizables y evitar acoplar sistemas nuevos a una sesión remota cuando no sea necesario. Conservar funcionando la base multijugador actual, pero aplazar ampliaciones que solo sirvan al juego online.
 
-CUARTO PASO:
-Definir la arquitectura de entidades compartidas y enemigos.
+ETAPA FUTURA:
+Cuando el RPG individual esté completo, retomar el modo para dos jugadores aprovechando la arquitectura y el código existente. Entonces se revisarán las necesidades de sincronización, persistencia compartida, seguridad y pruebas de red que sigan pendientes.
 
-QUINTO PASO:
-Diseñar el combate con validación del servidor.
-
-SEXTO PASO:
-Desarrollar inventario, objetos, habilidades y progresión.
-
-SEPTIMO PASO:
-Diseñar cuentas y persistencia.
-
-OCTAVO PASO:
-Preparar acceso externo, seguridad y lanzamiento.
-
-No repetir pruebas completas de conexión y sincronización ya verificadas,
-salvo que un cambio concreto requiera comprobarlas.
+No repetir pruebas completas de conexión y sincronización ya verificadas, salvo que un cambio concreto requiera comprobarlas.
 
 ============================================================
 15. REGLAS DE TRABAJO PARA LA SIGUIENTE IA
@@ -725,24 +726,90 @@ salvo que un cambio concreto requiera comprobarlas.
 16. PUNTO EXACTO DE CONTINUIDAD
 ============================================================
 
-Estado publicado de referencia:
-Rama main del repositorio ClassicRPG.
+DIRECCION VIGENTE — 02/11/2026:
+ClassicRPG se desarrollará primero como RPG para un solo jugador. El modo de dos jugadores ya trabajado se mantiene intacto y queda reservado para una etapa posterior. Esta directiva cambia la prioridad de desarrollo; no elimina ni invalida los sistemas multijugador existentes.
 
-Las fases 1, 2 y 3 están documentadas como completadas.
+Estado reciente:
+- El usuario confirmó que combate, progreso, botín individual y animación remota funcionan en su comprobación.
+- La capacidad inicial del inventario (20 ranuras), sus rechazos y el contador del HUD están implementados y pasaron el chequeo de sintaxis.
+- Las aserciones automatizadas de ranuras llenas, apilado y pila máxima pasaron en Godot 4.7.2.
+- El usuario hará la comprobación visual del panel de inventario; no abrir ni manejar clientes gráficos.
 
-La Fase 4 tiene una base funcional de personaje, movimiento,
-cámara y animaciones procedurales, pero todavía requiere desarrollo.
+Siguiente tarea:
+Auditar el flujo individual de inicio y las dependencias de red; definir cómo se juega sin un segundo cliente. Continuar con inventario, NPC/misiones, mundo, progresión y guardado local.
 
-La siguiente tarea recomendada es inspeccionar:
-Personajes/Jugador.tscn
-
-Después se podrá planificar la evolución de personajes y animaciones
-sin modificar innecesariamente los sistemas ya existentes.
+Conservar scripts, escenas, recursos, pruebas y documentación multijugador. Sin commit ni push sin autorización.
 
 IMPORTANTE:
-Esta guía describe el estado comprobado en los archivos revisados
-del repositorio. No sustituye una nueva inspección del código cuando
-se retome el trabajo.
+Esta guía conserva notas históricas; verificar memoria/ESTADO_ACTUAL.md, memoria/PENDIENTES.md y el proyecto real antes de cada tarea.
 
+============================================================
 FIN DE LA GUIA DE CONTINUIDAD
 ============================================================
+
+CONTINUIDAD 02/11/2026 — GUARDADO LOCAL VERIFICADO
+
+`Servidor.gd` guarda posición/orientación, salud, inventario, nivel/XP, misión y equipo en `user://classicrpg_partida.json`; usa autosave de 10 s, guarda cambios y cierre, y carga al conectar en modo individual. El modo externo no lee ni escribe ese archivo. `PruebaCombate.gd` comprueba la restauración con un temporal `user://` único y lo elimina. Las siete pruebas y siete chequeos de sintaxis Godot 4.7.2 pasan. No se tocó el archivo de partida del usuario ni se abrió GUI.
+
+La Fase 7 sigue activa por contenido y sistemas pendientes. Próximo: añadir una misión de entrega de materiales, cubrir su consumo de inventario con pruebas y después revisar el ciclo de inicio/continuación/cierre. El usuario hará la comprobación visual del HUD. Preservar las pruebas y recursos de dos clientes; sin commit ni push.
+Continuidad 02/11/2026: se añadió vida del jugador, daño del lobo, muerte/respawn y HUD de salud. La suite de siete pruebas existentes pasó en Godot 4.7.2; el arranque servidor-cliente headless validó el mapa. La comprobación visual queda reservada al usuario. Seguir con objetos/equipamiento, interacción NPC/misión y guardado/carga local, manteniendo todos los recursos de multijugador y sin commit/push.
+
+Arranque individual: abrir la escena ahora integra el servidor local en el mismo proceso. El lanzador de pruebas utiliza `--servidor-externo` y conserva el servidor dedicado para uno o dos clientes. Ambos modos fueron conectados y validados headless; las siete pruebas y el análisis de PowerShell pasaron. Siguiente: equipamiento/uso de objetos, misiones NPC y guardado local. No se abrió cliente gráfico ni se hizo commit/push.
+
+Misión individual inicial implementada y comprobada automáticamente: Tab para seleccionar al Habitante, E para aceptar a distancia corta, derrotar tres lobos y obtener 50 XP extra. PruebaCombate valida el ciclo; toda la suite y los modos local/external headless pasan. La revisión visual corresponde al usuario. Siguiente: uso/equipamiento y guardado local; preservar la red existente.
+
+El jugador ya puede usar pociones con 2 y equipar la espada de la primera misión con Q; la misión recompensa ambos objetos. La poción restaura hasta 35 HP sin sobrecurar y el servidor aplica +5 daño por espada. PruebaCombate, suite de siete pruebas y arranques headless en ambos modos pasan. Revisión visual reservada al usuario. Siguiente: guardado/carga local; conservar multijugador.
+CONTINUIDAD MÁS RECIENTE 02/11/2026: el guardado/carga local inicial está implementado y verificado. Se guarda posición/orientación, salud, inventario, nivel/XP, misión y equipo en `user://classicrpg_partida.json`; autosave cada 10 segundos y guardado al cambiar estado, al recibir daño/respawnear, al desconectar y cerrar. El modo externo no lee ni escribe esa partida.
+
+Las siete pruebas y siete chequeos de sintaxis Godot 4.7.2 pasan. PruebaCombate verifica el round-trip y elimina su archivo temporal `user://`; no se tocó una partida del usuario. No se abrió la interfaz gráfica. La revisión visual corresponde al usuario.
+
+Siguiente: ampliar la primera zona con una misión de entrega de materiales al Habitante y comprobar validación de distancia/estado/cantidad y consumo de inventario; después revisar inicio, continuación y cierre de sesión. Fase 7 activa. Preservar todas las pruebas y recursos multijugador; sin commit ni push.
+CONTINUIDAD MÁS RECIENTE 02/11/2026 — Segunda misión y partida individual verificadas: «Entrega de pieles» pide tres pieles de lobo al Habitante, conserva el inventario si faltan materiales, consume exactamente tres al completar y da 75 XP. El HUD muestra el progreso y el retorno al NPC. El estado queda guardado localmente.
+
+La prueba de combate cubre escasez, no consumo, avance por loot, entrega, sobrantes, recompensa y persistencia. La prueba nueva `PruebaPartidaIndividual.gd` confirma el inicio headless de la escena real con servidor integrado y un solo cliente, validación del mundo y guardado al cerrar. Ocho pruebas y seis chequeos de sintaxis Godot 4.7.2 pasan; `git diff --check` pasa. Los temporales se limpiaron, el guardado permanente no se tocó y no se abrió GUI.
+
+Próximo: probar lecturas de archivo corrupto/versión desconocida con un archivo temporal, ampliar criaturas y misiones de la primera zona y completar el flujo/las habilidades. La Fase 7 sigue activa; el usuario conserva la revisión visual. Preservar toda la base multijugador. Sin commit ni push.
+CONTINUIDAD MÁS RECIENTE 02/11/2026 — El guardado local ahora se recupera de JSON corrupto/versiones desconocidas y normaliza tipos fuera de rango. `PruebaCombate.gd` cubre JSON corrupto, versión 2 y campos estructurados inválidos mediante un archivo temporal `user://`, valida valores seguros y lo elimina. Ocho pruebas, seis chequeos GDScript y `git diff --check` pasan con Godot 4.7.2. Incluye integración individual con un cliente headless y preserva las pruebas de dos jugadores. No se tocó el guardado permanente ni se abrió GUI.
+
+Siguiente: ampliar criaturas, misiones y habilidades de la primera zona; luego completar el flujo de inicio/continuación/cierre y balance. Fase 7 activa. La inspección visual del HUD corresponde al usuario. Preservar todo el multijugador; sin commit ni push.
+
+CONTINUIDAD MÁS RECIENTE 02/11/2026 — Cabeza y locomoción de Male_Ranger completadas técnicamente: el GLTF no incluía cara ni clips, y Jugador.gd animaba únicamente las piezas provisionales ocultas. Se añadió la cabeza/cuello, ojos y cejas del UBC Standard masculino, y Jugador.gd aplica las curvas procedurales existentes a los esqueletos Ranger/cabeza. El README del atuendo advierte clipping al usar cuerpo UBC completo; la descarga local Standard solo tiene cuerpo Superhero, no Regular, por lo que no se superpuso. Godot 4.7.2: 12/12 pruebas headless con código 0, incluyendo rostro/rig, locomoción, partida individual con WebSocket y dos clientes. La primera prueba individual necesitó permiso loopback del entorno. No se abrió GUI: el usuario hará la inspección visual. Pendiente feedback de cabeza bajo capucha/ajuste del cuerpo; preservar trabajo y multijugador; sin commit/push.
+CONTINUIDAD MÁS RECIENTE 02/11/2026 — Reapertura individual comprobada: `PruebaPartidaIndividual.gd` abre `Escena1` headless con servidor integrado y un cliente, modifica un estado de prueba, cierra, vuelve a abrir y verifica posición, inventario, XP/nivel, salud, misión 2/3, espada y HUD. Usa un archivo `user://` temporal único y lo elimina. Ocho pruebas Godot 4.7.2, seis chequeos de sintaxis y `git diff --check` pasan. No se creó ni modificó la partida permanente, no se abrió GUI y no hubo commit/push.
+
+Guardado/carga/reanudación individual comprobados técnicamente. Próximo: ampliar criaturas, misiones y habilidades de la primera zona; luego revisar flujo de sesión, presentación y balance. El usuario conserva la comprobación visual. Fase 7 activa; preservar todo el multijugador.
+
+CONTINUIDAD 02/11/2026 — Habilidad activa comprobada: la tecla 3 usa golpe pesado con daño doble, recarga autoritativa de 6 s y animación más fuerte que también se replica con el tipo de ataque. Las teclas de poción/equipo no cambian. Ocho pruebas en Godot 4.7.2 pasan; la prueba individual integrada ataca al lobo del servidor local y confirma el daño, y después comprueba guardado/carga entre sesiones. El test cooperativo valida recargas aisladas por jugador. git diff --check pasó, el puerto de prueba quedó libre, los temporales se limpiaron y no se tocó el guardado permanente. No se abrió GUI.
+
+Siguiente: ampliar la primera zona con otra criatura, comportamiento y botín autoritativos y prueba automatizada; continuar misiones y balance. Fase 7 sigue activa; el usuario se reserva la revisión visual. Conservar multijugador. Sin commit ni push.
+
+CONTINUIDAD 02/11/2026 — Jabalí añadido/verificado: nueva entidad con patrulla y ataque autoritativos, 80 HP, 14 de daño, recarga 2 s, botín de colmillo/carne, 35 XP y respawn. Modelo procedural de nueve mallas. Godot 4.7.2: ocho pruebas en código 0, once --check-only y git diff --check pasaron; incluye el test de dos clientes y escena individual de conexión/guardado/reapertura. No hubo GUI, el puerto quedó libre, temporales limpios y guardado permanente intacto. Próximo: misión de carne de jabalí y más contenido/balance; revisión gráfica a cargo del usuario. Mantener multijugador; sin commit/push.
+
+CONTINUIDAD 02/11/2026 — Tercera misión de provisiones de jabalí y reanudación individual verificadas. Ocho pruebas funcionales pasan (combate, targeting, NPC, fábrica, entidades, dos clientes, animación e integración individual); 14 --check-only y git diff --check pasan en Godot 4.7.2. La integración abre la escena real, conecta el servidor local, cierra/reabre y restaura estado y HUD. Temporales de prueba bajo Documents/Codex por permisos user:// del entorno; el guardado del juego sigue en user://. Siguiente: revisión visual del usuario, contenido/balance y auditoría de cierre de Fase 7. Multijugador preservado, sin commit/push.
+
+## Misión de caza de jabalíes — 02/11/2026
+
+Tras entregar las provisiones se habilita la caza de tres jabalíes. El servidor cuenta las bajas autoritativamente, actualiza el HUD, recompensa 60 XP al completar además de XP normal por criatura y guarda/restaura el estado de misión. PruebaCombate.gd pasó con código 0 y ya valida aceptación, tres bajas, XP total y normalización de estado completado. Servidor.gd y Main.gd pasaron --check-only previamente; diff check pasó tras esta ampliación. La fase individual sigue abierta para más contenido, balance y auditoría final. No commit/push; preservar multijugador.
+
+Verificación posterior a misión de caza (02/11/2026): las ocho pruebas funcionales completas pasaron con código 0 en Godot 4.7.2, incluida la integración de dos sesiones individuales y la prueba automatizada de dos clientes. git diff --check también pasó. No se abrió GUI ni se tocaron guardados permanentes. La misión de caza de jabalí quedó cubierta por PruebaCombate.
+
+Actualización de recompensa final de misión (02/11/2026): al completar la caza de tres jabalíes, se pueden reclamar dos pociones curativas una sola vez hablando con el Habitante. La marca recompensa_reclamada persiste en la misión normalizada, evitando duplicación tras reconexión. PruebaCombate valida la reclamación única; Godot 4.7.2 --check-only en servidor y prueba pasó, PruebaCombate exit 0 y git diff --check pasó. Pendiente repetir integración individual completa tras cambio de serialización de misión.
+
+Revalidación de marca de recompensa (02/11/2026): tras persistir recompensa_reclamada, PruebaPartidaIndividual, PruebaDosClientesCombate y PruebaCombate pasaron con código 0 en Godot 4.7.2. La integración confirma carga/guardado/reapertura y HUD; la prueba de dos clientes conserva el modo de red. git diff --check pasó. Temporales de integración en Documents/Codex; sin modificación del guardado permanente, sin GUI ni commit/push.
+
+Menú de inicio individual añadido (02/11/2026): la escena principal ahora presenta nueva partida, continuar cuando hay un guardado local y salir. Para evitar pérdida accidental, Nueva partida se desactiva si ya hay guardado; Continuar se habilita solo con archivo existente. El menú no arranca servidor hasta entrar al mapa y muestra controles básicos. MenuInicio.gd pasó --check-only; ejecutar la escena por defecto headless con --quit-after 2 terminó con código 0; git diff --check pasó. La revisión gráfica corresponde al usuario. Falta probar interacción de botones gráficamente y cubrir estados del menú; el proyecto sigue abierto, multijugador preservado, sin commit/push.
+
+Prueba del menú inicial (02/11/2026): se añadió PruebaMenuInicio.gd con ruta temporal en Documents/Codex. Comprueba en headless que sin guardado permite Nueva partida y bloquea Continuar, y con guardado hace lo inverso; el temporal se elimina. MenuInicio.gd y su prueba pasan --check-only; PruebaMenuInicio terminó con código 0 y git diff --check pasó. No lee, modifica ni elimina el guardado real. Revisión gráfica de disposición y navegación por botones aún pendiente del usuario.
+
+Regresión completa tras cambio a menú inicial (02/11/2026): nueve pruebas pasaron con código 0: menú, targeting, NPC, fábrica, entidades, dos clientes, combate, animación e integración individual. Dieciséis scripts pasaron --check-only y git diff --check pasó. El menú ahora es escena principal; el mapa conserva su uso directo en las pruebas y en el cliente. Continúan pendientes la revisión gráfica del usuario, balance/experiencia de sesión y auditoría final de requisitos; Fase 7 abierta. Sin commit/push; multijugador preservado.
+
+Flujo de reinicio seguro (02/11/2026): el menú permite borrar el archivo local solo mediante un ConfirmationDialog que explica que el progreso se eliminará. Sin guardado, borrar está deshabilitado; con guardado, nueva partida se bloquea y continuar/borrar se habilitan. Tras confirmar el borrado, nueva partida queda disponible. PruebaMenuInicio valida los tres estados y la conexión del diálogo usando un archivo temporal aislado; Godot 4.7.2 test exit 0, ambos scripts --check-only y diff check pasan. El guardado real solo se elimina tras confirmación explícita del jugador.
+
+Regresión del ciclo de sesión tras habilitar borrado confirmado (02/11/2026): nueve pruebas funcionales terminaron con código 0; dieciséis scripts pasaron --check-only; git diff --check pasó. Se cubren estados del menú, confirmación de borrado en temporal, escenas de red de uno y dos clientes, combate, misiones, guardado/reanudación. La prueba no borra ni modifica la partida permanente. Pendiente: prueba manual visual de menú/controles y auditoría final contra requisitos de cierre de RPG individual.
+
+Pausa y retorno al título verificados (02/11/2026): P abre panel con árbol pausado; Reanudar lo cierra. Guardar/volver llama a persistencia antes del cambio de escena. La integración individual de dos sesiones pasó con código 0 y valida pausa/reanudación, guardado/carga, HUD y estado. Para evitar colisiones WebSocket al reiniciar en la misma prueba, el servidor integrado elige un puerto libre entre 9000–9099 y configura el cliente local con esa dirección; Multijugador.gd conserva ws://127.0.0.1:9000 por defecto para servidores externos. PruebaDosClientesCombate, PruebaCombate y PruebaMenuInicio pasaron; Main/servidor/cliente/test de integración pasaron --check-only; diff check pasó. Pendiente revisión gráfica del usuario y auditoría final. Sin commit/push.
+
+## Relevo urgente — 02/11/2026
+
+Estado comprobado en este relevo: el árbol de trabajo conserva cambios locales no preparados y archivos nuevos; no se hizo commit ni push. La nota previa documenta que Godot 4.7.2 pasó la integración individual (reapertura/guardado, estado y HUD), más PruebaDosClientesCombate, PruebaCombate y PruebaMenuInicio; `git diff --check` pasó. El menú inicial, la pausa P, el reanudar y el guardado antes de pedir volver al título están implementados. Precisión: la integración citada ejercitó pausa/reanudación y reabrir sesión; el clic real de «Guardar y volver al título» y la revisión visual del menú aún requieren comprobación del usuario. No tocar el guardado de producción `user://classicrpg_partida.json`.
+
+Siguiente paso al retomar: abrir el juego en Godot 4.7.2, revisar menú/controles, iniciar o continuar, abrir pausa y comprobar «Guardar y volver al título»; luego continuar auditoría de contenido/balance de Fase 7. Mantener el modo individual como prioridad, preservar íntegra la infraestructura y pruebas de dos jugadores. No declarar terminado ni crear commit/push hasta cerrar el protocolo y la revisión pendiente.
